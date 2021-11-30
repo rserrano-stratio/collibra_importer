@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Record Editor</title>
+</head>
+<body>
+
+<div>
+    <form action="/save_results" method="post">
+<table>
+    <tr>
+        <td>
+            Tracked Out
+        </td>
+        <td>
+    <input type="text" id="comment" name="comment">
+        </td>
+    </tr>
+        <tr>
+        <td>
+            To Remove
+        </td>
+        <td>
+            <input type="checkbox" id="to_remove" name="to_remove" value="remove">
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2"><input type="hidden" id="rec_id" name="rec_id" value="{{ data }}"><input type="submit" value="Submit"></td>
+    </tr>
+</table>
+    </form>
+</div>
+</body>
+</html>
