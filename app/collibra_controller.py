@@ -16,7 +16,7 @@ class CollibraController:
     __instance = None
     __dbc = None
     tables = ["dataconcepts", "datadomains", "dataelements", "dataqualityrules", "dqrequirements",
-              "dqrequirementsfacts", "elementdictionary", "rulerequirementmapping", "conceptdictionary"]
+"dqrequirementsfacts", "elementdictionary", "rulerequirementmapping", "conceptdictionary","mappingqrs"]
 
     @staticmethod
     def getInstance():
@@ -28,7 +28,7 @@ class CollibraController:
         if CollibraController.__instance is not None:
             pass
         else:
-            # CollibraController.__dbc = DBController.getInstance()
+            CollibraController.__dbc = DBController.getInstance()
             CollibraController.__instance = self
 
     def getCompletenessQr(self, attributeName, metadataPath, status, threshold):
@@ -591,38 +591,40 @@ class CollibraController:
     def processCollibraData(self, ontologyName, ontologyBaseTaxonomy, filter='%'):
         governanceController = GovernanceController.getInstance()
 
-        qrQuery = '''select 
-dataelements.name as de_name, dataelements.published_indicator as published_indicator,
-datadomains.name as dd_name, datadomains.l0_domain_name as dd_l0, datadomains.l1_domain_name as dd_l1, datadomains.l2_domain_name as dd_l2, datadomains.l3_domain_name as dd_l3, concat(datadomains.l0_domain_name , '_', datadomains.l1_domain_name, '_', datadomains.l2_domain_name, '_', datadomains.l3_domain_name, '_', dataelements.name) as domain_path,
-dqrequirements.published_indicator as dqr_published_indicator, dqrequirements.data_quality_requirement_target as dqr_target,
-dataqualityrules.name as dq_name, dataqualityrules.data_quality_rule as dq_qr_rule, dataqualityrules.data_quality_dimension_id as dq_dimension, dataqualityrules.data_quality_target as dq_target 
-
-from public.dataelements dataelements join public.elementdictionary d on dataelements.collibra_resource_id=d.element_id join public.dataconcepts c on d.property_concept_id=c.collibra_resource_id join public.conceptdictionary conceptdictionary on c.collibra_resource_id=conceptdictionary.concept_id
-join public.datadomains datadomains on conceptdictionary.domain_id=datadomains.collibra_resource_id
-
-join public.dqrequirementsfacts dqrequirementsfacts on dataelements.collibra_resource_id=dqrequirementsfacts.hbim_data_element_id join public.dqrequirements dqrequirements on dqrequirementsfacts.data_quality_requirement_id=dqrequirements.collibra_resource_id 
-
-join public.rulerequirementmapping rulerequirementmapping on dqrequirements.collibra_resource_id=rulerequirementmapping.data_quality_requirement_id
-join public.dataqualityrules dataqualityrules on rulerequirementmapping.data_quality_rule_id=dataqualityrules.collibra_resource_id
-where dataqualityrules.name like '{}'
-order by dataelements.collibra_resource_id
-                   '''.format(filter)
+        qrQuery = '''select dd.l0_domain_name as dd_l0, dd.l1_domain_name as dd_l1, dd.l2_domain_name as dd_l2, dd.l3_domain_name as dd_l3, 
+                    dec.name as de_name, dc.requirement_description as dc_requirement_description, 
+                    req.dq_dimension_id as req_dimension_id, dc.data_quality_requirement_target as dqr_target, mqc.stratio_qr_dimension as qr_generic_name
+                    from dataelements dec
+                    join dqrequirementsfacts req
+                    on dec.collibra_resource_id = req.hbim_data_element_id
+                    join dataconcepts dcc 
+                    on req.applies_to_concept_resource_id = dcc.collibra_resource_id
+                    join conceptdictionary cdc 
+                    on cdc.concept_id = dcc.collibra_resource_id 
+                    join datadomains dd
+                    on dd.collibra_resource_id = cdc.domain_id 
+                    join dqrequirements dc 
+                    on req.data_quality_requirement_id = dc.collibra_resource_id
+                    join mappingqrs mqc
+                    on dc.requirement_description = mqc.requirement_description
+                    where dc.published_indicator = 1
+                '''
         engine = self.__dbc.engine
-        # qr_df = pd.read_sql_query(qrQuery, engine)
+        qr_df = pd.read_sql_query(qrQuery, engine)
 
         # qr_df = pd.read_csv("data/collibraQR.csv")
-        qr_df = pd.read_csv("data/collibra_data.csv")
+        #qr_df = pd.read_csv("data/collibra_data.csv")
         # qr_df = qr_df[qr_df["dq_name"].str.contains("CMP001")]
 
-        qr_df["de_name"] = qr_df["de_name"].map(lambda x: governanceController.normalizeName(x))
-        qr_df["dd_name"] = qr_df["dd_name"].map(lambda x: governanceController.normalizeName(x))
-        qr_df["dd_l0"] = qr_df["dd_l0"].map(lambda x: governanceController.normalizeName(x))
-        qr_df["dd_l1"] = qr_df["dd_l1"].map(lambda x: governanceController.normalizeName(x))
-        qr_df["dd_l2"] = qr_df["dd_l2"].map(lambda x: governanceController.normalizeName(x))
-        qr_df["dd_l3"] = qr_df["dd_l3"].map(lambda x: governanceController.normalizeName(x))
-        qr_df["dd_name"] = qr_df["dd_name"].map(lambda x: str(governanceController.normalizeName(x))).map(
-            lambda x: x if x != "nan" else "hsbc_entity")
-        qr_df["dd_l0"] = qr_df["dd_l0"].map(lambda x: str(x)).map(lambda x: x if x != "nan" else "hsbc_entity")
+        #qr_df["de_name"] = qr_df["de_name"].map(lambda x: governanceController.normalizeName(x))
+        #qr_df["dd_name"] = qr_df["dd_name"].map(lambda x: governanceController.normalizeName(x))
+        #qr_df["dd_l0"] = qr_df["dd_l0"].map(lambda x: governanceController.normalizeName(x))
+        #qr_df["dd_l1"] = qr_df["dd_l1"].map(lambda x: governanceController.normalizeName(x))
+        #qr_df["dd_l2"] = qr_df["dd_l2"].map(lambda x: governanceController.normalizeName(x))
+        #qr_df["dd_l3"] = qr_df["dd_l3"].map(lambda x: governanceController.normalizeName(x))
+        #qr_df["dd_name"] = qr_df["dd_name"].map(lambda x: str(governanceController.normalizeName(x))).map(
+            #lambda x: x if x != "nan" else "hsbc_entity")
+        #qr_df["dd_l0"] = qr_df["dd_l0"].map(lambda x: str(x)).map(lambda x: x if x != "nan" else "hsbc_entity")
 
         # qr_created = 0
         # succesfulQr = []
@@ -633,12 +635,18 @@ order by dataelements.collibra_resource_id
         conf_qr_created = 0
         succesfulQr = []
         failedQr = []
-
+        
         for element in qr_df.iterrows():
             # build metadataPath
             # get the actualDataAsset (confirme the actual metadatapath exist)
             # assign the Qr
+            nameLike = '%' + element[1]["qr_generic_name"] + '%'
+            print(nameLike)
+            res = governanceController.getQRByName(name=nameLike, size=1)
+            break
 
+            
+            '''
             if "CMP001" in str(element[1]["dq_name"]):
 
                 l0 = str(element[1]["dd_l0"]).lower().replace(" ", "_")
@@ -883,14 +891,16 @@ order by dataelements.collibra_resource_id
                         conf_qr_created += 1
                     else:
                         failedQr.append(metadataPath)
-
+            '''
+        print(res)
         qr_created = comp_qr_created + conf_qr_created + val_qr_created
         # print("Existing Data Elements: {}".format(qr_created))
         print("Sucessfully created: {} quality rules".format(len(succesfulQr)))
         print("Failed to create: {} quality rules".format(len(failedQr)))
-        qrs = governanceController.getQRByName(name="%_Automated%", size=10000)
-        print("Total Collibra QRs Created: {}".format(len(qrs)))
-        return succesfulQr, failedQr, len(qrs)
+        #qrs = governanceController.getQRByName(name="%_Automated%", size=10000)
+        #print("Total Collibra QRs Created: {}".format(len(qrs)))
+        #return succesfulQr, failedQr, len(qrs)
+        return succesfulQr, failedQr, 0
 
     """
             for element in qr_df.iterrows():
@@ -964,7 +974,7 @@ order by dataelements.collibra_resource_id
                           any(table in file["new_name"] for table in CollibraController.tables)]
         for accepted_file in accepted_files:
             for table in CollibraController.tables:
-                if table in accepted_file["new_name"]:
+                if table == accepted_file["new_name"]:
                     accepted_file["table"] = table
                     break
 

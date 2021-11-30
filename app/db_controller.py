@@ -15,11 +15,11 @@ Base = declarative_base()
 
 
 class DBController:
-    __db_url = os.getenv('DB_URL', "127.0.0.1")
+    __db_url = os.getenv('DB_URL', "localhost")
     __db_port = os.getenv('DB_PORT', "5432")
-    __db_user = os.getenv('DB_USER', "hsbc-user")
-    __db_name = os.getenv('DB_NAME', "postgres")
-    __db_password = os.getenv('DB_PASSWORD', "stratio")
+    __db_user = os.getenv('DB_USER', "postgres")
+    __db_name = os.getenv('DB_NAME', "collibra_importer")
+    __db_password = os.getenv('DB_PASSWORD', "mysecretpassword")
     __db_auth_mode = os.getenv('DB_AUTH_MODE', "password")  # password, cert
     __instance = None
 

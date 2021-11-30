@@ -14,7 +14,7 @@ import pandas as pd
 
 from governance_controller import GovernanceController
 from collibra_controller import CollibraController
-from infer_controller import InferController
+#from infer_controller import InferController
 
 
 app = FastAPI()
@@ -22,7 +22,7 @@ app = FastAPI()
 uploads_path = "data/uploads"
 csvs_path = "data/csvs"
 controller = CollibraController.getInstance()
-icontroller = InferController.getInstance()
+#icontroller = InferController.getInstance()
 
 
 def zipdir(path, ziph):
@@ -109,6 +109,7 @@ async def process_collibra(directory, ontologyName, ontologyBaseTaxonomy, filter
     succesfulQr, failedQr, allCollibra = controller.processCollibraData(ontologyName, ontologyBaseTaxonomy, filter)
     return {"status": "Updating QRs completed", "succesfulQRs": len(succesfulQr), "failedQRs": len(failedQr),
             "Total Imported QRs": allCollibra}
+    #return 0
 
 
 def custom_openapi():
@@ -130,5 +131,5 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 if __name__ == "__main__":
-    gov = GovernanceController.getInstance("https://admin.hsbc.stratio.com", "hsbc", "mberrojalbiz", "stratio")
+    gov = GovernanceController.getInstance("https://admin.saassgt.stratio.com/", "caceis", "sdabbour", "aeWo4tha")
     uvicorn.run(app, host="0.0.0.0", port=8000)
