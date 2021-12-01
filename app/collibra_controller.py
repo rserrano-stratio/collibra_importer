@@ -681,7 +681,7 @@ class CollibraController:
             qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
             qr_template["parameters"]["table"]["type"] = "ONTOLOGY"
             qr_template["name"] = "Completeness_2_test1"
-            #qr_template["resultUnit"]["value"] = element[1]["dqr_target"] * 100
+            qr_template["resultUnit"]["value"] = element[1]["dqr_target"] * 100
     
             del qr_template["tenant"]
             del qr_template["createdAt"]
@@ -698,8 +698,8 @@ class CollibraController:
 
                 qr_result = governanceController.addQualityRule(qr_template)
 
-                print(qr_result)
-                
+                print(qr_result.text)
+
                 if qr_result is not None and qr_result.ok:
                     succesfulQr.append(metadataPath)
                     comp_qr_created += 1
