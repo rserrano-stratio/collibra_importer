@@ -640,259 +640,76 @@ class CollibraController:
             # build metadataPath
             # get the actualDataAsset (confirme the actual metadatapath exist)
             # assign the Qr
-            nameLike = '%' + element[1]["qr_generic_name"] + '%'
+            nameLike = element[1]["qr_generic_name"]
             print(nameLike)
-            res = governanceController.getQRByName(name=nameLike, size=1)
+            qr_template = governanceController.getGenericQR(nameLike)
+
+            class_name = str(element[1]["dd_l0"]).replace(" ", "_")
+
+            l0 = str(element[1]["dd_l0"]).replace(" ", "_")
+            l1 = str(element[1]["dd_l1"]).replace(" ", "_")
+            l2 = str(element[1]["dd_l2"]).replace(" ", "_")
+            l3 = str(element[1]["dd_l3"]).replace(" ", "_")
+            
+            columnName = str(element[1]["de_name"]).split("[")[0].rstrip().replace(" ", "_")
+
+            metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0 + "_t"
+            
+
+            if l1 is not None and l1 not in ["", "nan", "None"]:
+                metadataPath = metadataPath + "/" + l1 + "_t"
+                class_name = str(element[1]["dd_l1"]).replace(" ", "_")
+
+            if l2 is not None and l2 not in ["", "nan", "None"]:
+                metadataPath = metadataPath + "/" + l2 + "_t"
+                class_name = str(element[1]["dd_l2"]).replace(" ", "_")
+
+            if l3 is not None and l3 not in ["", "nan", "None"]:
+                metadataPath = metadataPath + "/" + l3 + "_t"
+                class_name = str(element[1]["dd_l3"]).replace(" ", "_")
+
+            metadataPath = metadataPath + ">/:{}:{}:".format(class_name,columnName)
+
+            #print(metadataPath)
+
+            qr_template["id"] = -1
+            qr_template["metadataPath"] = metadataPath
+            for cond in qr_template["parameters"]["filter"]["cond"]:
+                cond["attribute"] = columnName
+            qr_template["catalogAttributeType"] = "RESOURCE"
+            qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
+            qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
+            qr_template["parameters"]["table"]["type"] = "ONTOLOGY"
+            qr_template["name"] = "Completeness_2_test1"
+            #qr_template["resultUnit"]["value"] = element[1]["dqr_target"] * 100
+    
+            del qr_template["tenant"]
+            del qr_template["createdAt"]
+            del qr_template["modifiedAt"]
+            del qr_template["userId"]
+            del qr_template["qualityGenericId"]
+            del qr_template["query"]
+
+            print(qr_template)
+
+            res = governanceController.searchDataAssetByMetadataPath(metadataPath)
+            
+            if res.get("totalElements", 0) != 0:
+
+                qr_result = governanceController.addQualityRule(qr_template)
+
+                print(qr_result)
+                
+                if qr_result is not None and qr_result.ok:
+                    succesfulQr.append(metadataPath)
+                    comp_qr_created += 1
+                else:
+                    failedQr.append(metadataPath)
+            
+
             break
 
             
-            '''
-            if "CMP001" in str(element[1]["dq_name"]):
-
-                l0 = str(element[1]["dd_l0"]).lower().replace(" ", "_")
-                l1 = str(element[1]["dd_l1"]).lower().replace(" ", "_")
-                l2 = str(element[1]["dd_l2"]).lower().replace(" ", "_")
-                l3 = str(element[1]["dd_l3"]).lower().replace(" ", "_")
-                columnName = str(element[1]["de_name"]).lower().replace(" ", "_").replace("[", "").replace("]", "")
-
-                metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0
-
-                if l1 is not None and l1 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l1
-
-                if l2 is not None and l2 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l2
-
-                if l3 is not None and l3 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l3
-
-                metadataPath = metadataPath + ">/:{}:".format(columnName)
-                res = governanceController.searchDataAssetByMetadataPath(metadataPath)
-
-                if res.get("totalElements", 0) != 0:
-
-                    column_qr = self.getCompletenessQr(columnName, metadataPath,
-                                                       str(element[1]["dqr_published_indicator"]).lower() == "true",
-                                                       str(element[1]["dq_target"]))
-                    qr_result = governanceController.addQualityRule(column_qr)
-
-                    if qr_result is not None and qr_result.ok:
-                        succesfulQr.append(metadataPath)
-                        comp_qr_created += 1
-                    else:
-                        failedQr.append(metadataPath)
-
-            if "VLD001" in str(element[1]["dq_name"]):
-
-                l0 = str(element[1]["dd_l0"]).lower().replace(" ", "_")
-                l1 = str(element[1]["dd_l1"]).lower().replace(" ", "_")
-                l2 = str(element[1]["dd_l2"]).lower().replace(" ", "_")
-                l3 = str(element[1]["dd_l3"]).lower().replace(" ", "_")
-                columnName = str(element[1]["de_name"]).lower().replace(" ", "_").replace("[", "").replace("]", "")
-
-                metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0
-
-                if l1 is not None and l1 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l1
-
-                if l2 is not None and l2 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l2
-
-                if l3 is not None and l3 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l3
-
-                metadataPath = metadataPath + ">/:{}:".format(columnName)
-                res = governanceController.searchDataAssetByMetadataPath(metadataPath)
-
-                if res.get("totalElements", 0) != 0:
-
-                    column_qr = self.getValidity1Qr(columnName, metadataPath,
-                                                    str(element[1]["dqr_published_indicator"]).lower() == "true",
-                                                    str(element[1]["dq_target"]))
-                    qr_result = governanceController.addQualityRule(column_qr)
-
-                    if qr_result is not None and qr_result.ok:
-                        succesfulQr.append(metadataPath)
-                        val_qr_created += 1
-                    else:
-                        failedQr.append(metadataPath)
-
-            if "VLD002" in str(element[1]["dq_name"]):
-
-                l0 = str(element[1]["dd_l0"]).lower().replace(" ", "_")
-                l1 = str(element[1]["dd_l1"]).lower().replace(" ", "_")
-                l2 = str(element[1]["dd_l2"]).lower().replace(" ", "_")
-                l3 = str(element[1]["dd_l3"]).lower().replace(" ", "_")
-                columnName = str(element[1]["de_name"]).lower().replace(" ", "_").replace("[", "").replace("]", "")
-
-                metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0
-
-                if l1 is not None and l1 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l1
-
-                if l2 is not None and l2 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l2
-
-                if l3 is not None and l3 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l3
-
-                metadataPath = metadataPath + ">/:{}:".format(columnName)
-                res = governanceController.searchDataAssetByMetadataPath(metadataPath)
-
-                if res.get("totalElements", 0) != 0:
-
-                    column_qr = self.getValidity2Qr(columnName, metadataPath,
-                                                    str(element[1]["dqr_published_indicator"]).lower() == "true",
-                                                    str(element[1]["dq_target"]))
-                    qr_result = governanceController.addQualityRule(column_qr)
-
-                    if qr_result is not None and qr_result.ok:
-                        succesfulQr.append(metadataPath)
-                        val_qr_created += 1
-                    else:
-                        failedQr.append(metadataPath)
-
-            if "VLD003" in str(element[1]["dq_name"]) or "VLD004" in str(element[1]["dq_name"]):
-
-                l0 = str(element[1]["dd_l0"]).lower().replace(" ", "_")
-                l1 = str(element[1]["dd_l1"]).lower().replace(" ", "_")
-                l2 = str(element[1]["dd_l2"]).lower().replace(" ", "_")
-                l3 = str(element[1]["dd_l3"]).lower().replace(" ", "_")
-                columnName = str(element[1]["de_name"]).lower().replace(" ", "_").replace("[", "").replace("]", "")
-
-                metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0
-
-                if l1 is not None and l1 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l1
-
-                if l2 is not None and l2 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l2
-
-                if l3 is not None and l3 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l3
-
-                metadataPath = metadataPath + ">/:{}:".format(columnName)
-                res = governanceController.searchDataAssetByMetadataPath(metadataPath)
-
-                if res.get("totalElements", 0) != 0:
-
-                    column_qr = self.getValidity3Qr(columnName, metadataPath,
-                                                    str(element[1]["dqr_published_indicator"]).lower() == "true",
-                                                    str(element[1]["dq_target"]))
-                    qr_result = governanceController.addQualityRule(column_qr)
-
-                    if qr_result is not None and qr_result.ok:
-                        succesfulQr.append(metadataPath)
-                        val_qr_created += 1
-                    else:
-                        failedQr.append(metadataPath)
-
-            if "CFM001" in str(element[1]["dq_name"]):
-
-                l0 = str(element[1]["dd_l0"]).lower().replace(" ", "_")
-                l1 = str(element[1]["dd_l1"]).lower().replace(" ", "_")
-                l2 = str(element[1]["dd_l2"]).lower().replace(" ", "_")
-                l3 = str(element[1]["dd_l3"]).lower().replace(" ", "_")
-                columnName = str(element[1]["de_name"]).lower().replace(" ", "_").replace("[", "").replace("]", "")
-
-                metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0
-
-                if l1 is not None and l1 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l1
-
-                if l2 is not None and l2 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l2
-
-                if l3 is not None and l3 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l3
-
-                metadataPath = metadataPath + ">/:{}:".format(columnName)
-                res = governanceController.searchDataAssetByMetadataPath(metadataPath)
-
-                if res.get("totalElements", 0) != 0:
-
-                    column_qr = self.getConformity1Qr(columnName, metadataPath,
-                                                      str(element[1]["dqr_published_indicator"]).lower() == "true",
-                                                      str(element[1]["dq_target"]))
-                    qr_result = governanceController.addQualityRule(column_qr)
-
-                    if qr_result is not None and qr_result.ok:
-                        succesfulQr.append(metadataPath)
-                        conf_qr_created += 1
-                    else:
-                        failedQr.append(metadataPath)
-
-            if "CFM002" in str(element[1]["dq_name"]):
-
-                l0 = str(element[1]["dd_l0"]).lower().replace(" ", "_")
-                l1 = str(element[1]["dd_l1"]).lower().replace(" ", "_")
-                l2 = str(element[1]["dd_l2"]).lower().replace(" ", "_")
-                l3 = str(element[1]["dd_l3"]).lower().replace(" ", "_")
-                columnName = str(element[1]["de_name"]).lower().replace(" ", "_").replace("[", "").replace("]", "")
-
-                metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0
-
-                if l1 is not None and l1 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l1
-
-                if l2 is not None and l2 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l2
-
-                if l3 is not None and l3 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l3
-
-                metadataPath = metadataPath + ">/:{}:".format(columnName)
-                res = governanceController.searchDataAssetByMetadataPath(metadataPath)
-
-                if res.get("totalElements", 0) != 0:
-
-                    column_qr = self.getConformity2Qr(columnName, metadataPath,
-                                                      str(element[1]["dqr_published_indicator"]).lower() == "true",
-                                                      str(element[1]["dq_target"]))
-                    qr_result = governanceController.addQualityRule(column_qr)
-
-                    if qr_result is not None and qr_result.ok:
-                        succesfulQr.append(metadataPath)
-                        conf_qr_created += 1
-                    else:
-                        failedQr.append(metadataPath)
-
-            if "CFM003" in str(element[1]["dq_name"]):
-
-                l0 = str(element[1]["dd_l0"]).lower().replace(" ", "_")
-                l1 = str(element[1]["dd_l1"]).lower().replace(" ", "_")
-                l2 = str(element[1]["dd_l2"]).lower().replace(" ", "_")
-                l3 = str(element[1]["dd_l3"]).lower().replace(" ", "_")
-                columnName = str(element[1]["de_name"]).lower().replace(" ", "_").replace("[", "").replace("]", "")
-
-                metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0
-
-                if l1 is not None and l1 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l1
-
-                if l2 is not None and l2 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l2
-
-                if l3 is not None and l3 not in ["", "nan"]:
-                    metadataPath = metadataPath + "/" + l3
-
-                metadataPath = metadataPath + ">/:{}:".format(columnName)
-                res = governanceController.searchDataAssetByMetadataPath(metadataPath)
-
-                if res.get("totalElements", 0) != 0:
-
-                    column_qr = self.getConformity3Qr(columnName, metadataPath,
-                                                      str(element[1]["dqr_published_indicator"]).lower() == "true",
-                                                      str(element[1]["dq_target"]))
-                    qr_result = governanceController.addQualityRule(column_qr)
-
-                    if qr_result is not None and qr_result.ok:
-                        succesfulQr.append(metadataPath)
-                        conf_qr_created += 1
-                    else:
-                        failedQr.append(metadataPath)
-            '''
-        print(res)
         qr_created = comp_qr_created + conf_qr_created + val_qr_created
         # print("Existing Data Elements: {}".format(qr_created))
         print("Sucessfully created: {} quality rules".format(len(succesfulQr)))
