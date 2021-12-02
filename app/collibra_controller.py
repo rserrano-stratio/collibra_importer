@@ -641,32 +641,32 @@ class CollibraController:
             # get the actualDataAsset (confirme the actual metadatapath exist)
             # assign the Qr
             nameLike = element[1]["qr_generic_name"]
-            print(nameLike)
+            #print(nameLike)
             qr_template = governanceController.getGenericQR(nameLike)
 
-            class_name = str(element[1]["dd_l0"]).replace(" ", "_")
+            class_name = str(element[1]["dd_l0"]).replace(" ", "_").replace("/", "-")
 
-            l0 = str(element[1]["dd_l0"]).replace(" ", "_")
-            l1 = str(element[1]["dd_l1"]).replace(" ", "_")
-            l2 = str(element[1]["dd_l2"]).replace(" ", "_")
-            l3 = str(element[1]["dd_l3"]).replace(" ", "_")
+            l0 = str(element[1]["dd_l0"]).replace(" ", "_").replace("/", "-")
+            l1 = str(element[1]["dd_l1"]).replace(" ", "_").replace("/", "-")
+            l2 = str(element[1]["dd_l2"]).replace(" ", "_").replace("/", "-")
+            l3 = str(element[1]["dd_l3"]).replace(" ", "_").replace("/", "-")
             
-            columnName = str(element[1]["de_name"]).split("[")[0].rstrip().replace(" ", "_")
+            columnName = str(element[1]["de_name"]).split("[")[0].rstrip().replace(" ", "_").replace("/", "-")
 
             metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0 + "_t"
             
 
             if l1 is not None and l1 not in ["", "nan", "None"]:
                 metadataPath = metadataPath + "/" + l1 + "_t"
-                class_name = str(element[1]["dd_l1"]).replace(" ", "_")
+                class_name = str(element[1]["dd_l1"]).replace(" ", "_").replace("/", "-")
 
             if l2 is not None and l2 not in ["", "nan", "None"]:
                 metadataPath = metadataPath + "/" + l2 + "_t"
-                class_name = str(element[1]["dd_l2"]).replace(" ", "_")
+                class_name = str(element[1]["dd_l2"]).replace(" ", "_").replace("/", "-")
 
             if l3 is not None and l3 not in ["", "nan", "None"]:
                 metadataPath = metadataPath + "/" + l3 + "_t"
-                class_name = str(element[1]["dd_l3"]).replace(" ", "_")
+                class_name = str(element[1]["dd_l3"]).replace(" ", "_").replace("/", "-")
 
             metadataPath = metadataPath + ">/:{}:{}:".format(class_name,columnName)
 
@@ -690,10 +690,15 @@ class CollibraController:
             del qr_template["qualityGenericId"]
             del qr_template["query"]
 
-            print(qr_template)
+            #print(qr_template)
 
             res = governanceController.searchDataAssetByMetadataPath(metadataPath)
-            
+
+            if res.get("totalElements", 0) != 0:
+                succesfulQr.append(metadataPath)
+            else:
+                failedQr.append(metadataPath)
+            '''
             if res.get("totalElements", 0) != 0:
 
                 qr_result = governanceController.addQualityRule(qr_template)
@@ -709,7 +714,7 @@ class CollibraController:
 
             break
 
-            
+            '''
         qr_created = comp_qr_created + conf_qr_created + val_qr_created
         # print("Existing Data Elements: {}".format(qr_created))
         print("Sucessfully created: {} quality rules".format(len(succesfulQr)))
