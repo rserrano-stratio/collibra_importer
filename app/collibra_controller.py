@@ -8,6 +8,9 @@ from governance_controller import GovernanceController
 from db_controller import DBController
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+import re
+
+regex = "[a-zA-Z0-9\s]+"
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -31,442 +34,7 @@ class CollibraController:
             CollibraController.__dbc = DBController.getInstance()
             CollibraController.__instance = self
 
-    def getCompletenessQr(self, attributeName, metadataPath, status, threshold):
-
-        data = {
-            "id": -1,
-            "parameters": {
-                "filter": {
-                    "order": 1,
-                    "type": "and",
-                    "cond": [
-                        {
-                            "order": 1,
-                            "attribute": "identifier_holding",
-                            "operation": "is not null",
-                            "param": [],
-                            "formatter": "",
-                            "timeZoneId": ""
-                        },
-                        {
-                            "order": 2,
-                            "attribute": "identifier_holding",
-                            "operation": "is not empty",
-                            "param": [],
-                            "formatter": "",
-                            "timeZoneId": ""
-                        }
-                    ]
-                },
-                "table": {
-                    "type": "ONTOLOGY"
-                },
-                "catalogAttributeType": "RESOURCE"
-            },
-            "metadataPath": "ontologies://hsbcbm_testManual/hsbc_business_model/account_data/financial_position_data>/:identifier_holding:",
-            "catalogAttributeType": "RESOURCE",
-            "name": "test_qr_1",
-            "description": "",
-            "active": True,
-            "resultOperationType": "%",
-            "resultOperation": ">=",
-            "resultUnit": {
-                "name": "",
-                "value": "0.95"
-            },
-            "link": {
-                "dashboards": []
-            },
-            "type": "SPARK",
-            "resultExecute": {
-                "type": "EXE_REA"
-            },
-            "audit": False,
-            "resultAction": {
-                "type": "ACT_PASS"
-            }
-        }
-
-        data["parameters"]["filter"]["cond"][0]["attribute"] = attributeName
-        data["parameters"]["filter"]["cond"][1]["attribute"] = attributeName
-        data["metadataPath"] = metadataPath
-        data["active"] = status
-        data["resultUnit"]["value"] = threshold
-        data["name"] = attributeName + "_" + "Completeness_Automated"
-
-        return data
-
-    def getValidity1Qr(self, attributeName, metadataPath, status, threshold):
-
-        data = {
-            "id": -1,
-            "parameters": {
-                "filter": {
-                    "order": 1,
-                    "type": "and",
-                    "cond": [
-                        {
-                            "order": 1,
-                            "param": [
-                                {
-                                    "name": "",
-                                    "type": "ValueOperand",
-                                    "value": "USD"
-                                },
-                                {
-                                    "name": "",
-                                    "type": "ValueOperand",
-                                    "value": "EUR"
-                                }
-                            ],
-                            "attribute": "currency",
-                            "formatter": "",
-                            "operation": "in",
-                            "timeZoneId": ""
-                        }
-                    ],
-                },
-                "table": {
-                    "type": "ONTOLOGY"
-                },
-                "catalogAttributeType": "RESOURCE"
-            },
-            "metadataPath": "ontologies://hsbcbm_testManual/hsbc_business_model/account_data/financial_position_data>/:identifier_holding:",
-            "catalogAttributeType": "RESOURCE",
-            "name": "test_qr_1",
-            "description": "",
-            "active": True,
-            "resultOperationType": "%",
-            "resultOperation": ">=",
-            "resultUnit": {
-                "name": "",
-                "value": "0.95"
-            },
-            "link": {
-                "dashboards": []
-            },
-            "type": "SPARK",
-            "resultExecute": {
-                "type": "EXE_REA"
-            },
-            "audit": False,
-            "resultAction": {
-                "type": "ACT_PASS"
-            }
-        }
-
-        data["parameters"]["filter"]["cond"][0]["attribute"] = attributeName
-        data["metadataPath"] = metadataPath
-        data["active"] = status
-        data["resultUnit"]["value"] = threshold
-        data["name"] = attributeName + "_" + "Validity001_Automated"
-
-        return data
-
-    def getValidity2Qr(self, attributeName, metadataPath, status, threshold):
-
-        data = {
-            "id": -1,
-            "parameters": {
-                "filter": {
-                    "order": 1,
-                    "type": "and",
-                    "cond": [
-                        {
-                            "order": 1,
-                            "param": [
-                                {
-                                    "name": "",
-                                    "type": "ValueOperand",
-                                    "value": "^.*{8,10}$"
-                                }
-                            ],
-                            "attribute": "",
-                            "formatter": "",
-                            "operation": "regex",
-                            "timeZoneId": ""
-                        }
-                    ],
-                },
-                "table": {
-                    "type": "ONTOLOGY"
-                },
-                "catalogAttributeType": "RESOURCE"
-            },
-            "metadataPath": "ontologies://hsbcbm_testManual/hsbc_business_model/account_data/financial_position_data>/:identifier_holding:",
-            "catalogAttributeType": "RESOURCE",
-            "name": "test_qr_1",
-            "description": "",
-            "active": True,
-            "resultOperationType": "%",
-            "resultOperation": ">=",
-            "resultUnit": {
-                "name": "",
-                "value": "0.95"
-            },
-            "link": {
-                "dashboards": []
-            },
-            "type": "SPARK",
-            "resultExecute": {
-                "type": "EXE_REA"
-            },
-            "audit": False,
-            "resultAction": {
-                "type": "ACT_PASS"
-            }
-        }
-
-        data["parameters"]["filter"]["cond"][0]["attribute"] = attributeName
-        data["metadataPath"] = metadataPath
-        data["active"] = status
-        data["resultUnit"]["value"] = threshold
-        data["name"] = attributeName + "_" + "Validity002_Automated"
-
-        return data
-
-    def getValidity3Qr(self, attributeName, metadataPath, status, threshold):
-
-        data = {
-            "id": -1,
-            "parameters": {
-                "filter": {
-                    "order": 1,
-                    "type": "and",
-                    "cond": [
-                        {
-                            "order": 1,
-                            "param": [
-                                {
-                                    "name": "",
-                                    "type": "ValueOperand",
-                                    "value": "^[^\\\\!|\\\\?|\\\\@|\\\\[|\\\\]|\\\\Ç|\\\\%|\\\\#|\\\\“|\\\\±|\\\\+|\\\\*|\\\\ç|\\\\&|\\\\/|\\\\||\\\\(|\\\\)|\\\\{|\\\\}|\\\\≠|\\\\=|\\\\¿|\\\\,|\\\\-|\\\\_|\\\\$|\\\\£|\\\\¨|\\\\è|\\\\é|\\\\à|\\\\.|\\\\:|\\\\;|\\\\<|\\\\>]*$"
-                                }
-                            ],
-                            "attribute": "",
-                            "formatter": "",
-                            "operation": "regex",
-                            "timeZoneId": ""
-                        }
-                    ],
-                },
-                "table": {
-                    "type": "ONTOLOGY"
-                },
-                "catalogAttributeType": "RESOURCE"
-            },
-            "metadataPath": "ontologies://hsbcbm_testManual/hsbc_business_model/account_data/financial_position_data>/:identifier_holding:",
-            "catalogAttributeType": "RESOURCE",
-            "name": "test_qr_1",
-            "description": "",
-            "active": True,
-            "resultOperationType": "%",
-            "resultOperation": ">=",
-            "resultUnit": {
-                "name": "",
-                "value": "0.95"
-            },
-            "link": {
-                "dashboards": []
-            },
-            "type": "SPARK",
-            "resultExecute": {
-                "type": "EXE_REA"
-            },
-            "audit": False,
-            "resultAction": {
-                "type": "ACT_PASS"
-            }
-        }
-
-        data["parameters"]["filter"]["cond"][0]["attribute"] = attributeName
-        data["metadataPath"] = metadataPath
-        data["active"] = status
-        data["resultUnit"]["value"] = threshold
-        data["name"] = attributeName + "_" + "Validity003_Automated"
-
-        return data
-
-    def getConformity1Qr(self, attributeName, metadataPath, status, threshold):
-
-        data = {
-            "id": -1,
-            "parameters": {
-                "filter": {
-                    "order": 1,
-                    "type": "and",
-                    "cond": [
-                        {
-                            "order": 1,
-                            "param": [],
-                            "attribute": "",
-                            "formatter": "",
-                            "operation": "is date",
-                            "timeZoneId": ""
-                        }
-                    ],
-                },
-                "table": {
-                    "type": "ONTOLOGY"
-                },
-                "catalogAttributeType": "RESOURCE"
-            },
-            "metadataPath": "ontologies://hsbcbm_testManual/hsbc_business_model/account_data/financial_position_data>/:identifier_holding:",
-            "catalogAttributeType": "RESOURCE",
-            "name": "test_qr_1",
-            "description": "",
-            "active": True,
-            "resultOperationType": "%",
-            "resultOperation": ">=",
-            "resultUnit": {
-                "name": "",
-                "value": "0.95"
-            },
-            "link": {
-                "dashboards": []
-            },
-            "type": "SPARK",
-            "resultExecute": {
-                "type": "EXE_REA"
-            },
-            "audit": False,
-            "resultAction": {
-                "type": "ACT_PASS"
-            }
-        }
-
-        data["parameters"]["filter"]["cond"][0]["attribute"] = attributeName
-        data["metadataPath"] = metadataPath
-        data["active"] = status
-        data["resultUnit"]["value"] = threshold
-        data["name"] = attributeName + "_" + "Conformity001_Automated"
-
-        return data
-
-    def getConformity2Qr(self, attributeName, metadataPath, status, threshold):
-
-        data = {
-            "id": -1,
-            "parameters": {
-                "filter": {
-                    "order": 1,
-                    "type": "and",
-                    "cond": [
-                        {
-                            "order": 1,
-                            "param": [
-                                {
-                                    "name": "",
-                                    "type": "ValueOperand",
-                                    "value": "^[0-9]+$"
-                                }
-                            ],
-                            "attribute": "",
-                            "formatter": "",
-                            "operation": "regex",
-                            "timeZoneId": ""
-                        }
-                    ],
-                },
-                "table": {
-                    "type": "ONTOLOGY"
-                },
-                "catalogAttributeType": "RESOURCE"
-            },
-            "metadataPath": "ontologies://hsbcbm_testManual/hsbc_business_model/account_data/financial_position_data>/:identifier_holding:",
-            "catalogAttributeType": "RESOURCE",
-            "name": "test_qr_1",
-            "description": "",
-            "active": True,
-            "resultOperationType": "%",
-            "resultOperation": ">=",
-            "resultUnit": {
-                "name": "",
-                "value": "0.95"
-            },
-            "link": {
-                "dashboards": []
-            },
-            "type": "SPARK",
-            "resultExecute": {
-                "type": "EXE_REA"
-            },
-            "audit": False,
-            "resultAction": {
-                "type": "ACT_PASS"
-            }
-        }
-
-        data["parameters"]["filter"]["cond"][0]["attribute"] = attributeName
-        data["metadataPath"] = metadataPath
-        data["active"] = status
-        data["resultUnit"]["value"] = threshold
-        data["name"] = attributeName + "_" + "Conformity002_Automated"
-
-        return data
-
-    def getConformity3Qr(self, attributeName, metadataPath, status, threshold):
-
-        data = {
-            "id": -1,
-            "parameters": {
-                "filter": {
-                    "order": 1,
-                    "type": "and",
-                    "cond": [
-                        {
-                            "order": 1,
-                            "param": [
-                                {
-                                    "name": "",
-                                    "type": "ValueOperand",
-                                    "value": "^.*{8,10}$"
-                                }
-                            ],
-                            "attribute": "",
-                            "formatter": "",
-                            "operation": "regex",
-                            "timeZoneId": ""
-                        }
-                    ],
-                },
-                "table": {
-                    "type": "ONTOLOGY"
-                },
-                "catalogAttributeType": "RESOURCE"
-            },
-            "metadataPath": "ontologies://hsbcbm_testManual/hsbc_business_model/account_data/financial_position_data>/:identifier_holding:",
-            "catalogAttributeType": "RESOURCE",
-            "name": "test_qr_1",
-            "description": "",
-            "active": True,
-            "resultOperationType": "%",
-            "resultOperation": ">=",
-            "resultUnit": {
-                "name": "",
-                "value": "0.95"
-            },
-            "link": {
-                "dashboards": []
-            },
-            "type": "SPARK",
-            "resultExecute": {
-                "type": "EXE_REA"
-            },
-            "audit": False,
-            "resultAction": {
-                "type": "ACT_PASS"
-            }
-        }
-
-        data["parameters"]["filter"]["cond"][0]["attribute"] = attributeName
-        data["metadataPath"] = metadataPath
-        data["active"] = status
-        data["resultUnit"]["value"] = threshold
-        data["name"] = attributeName + "_" + "Conformity003_Automated"
-
-        return data
-
+    
     @staticmethod
     def generateTaxonomy_old(row):
         path = []
@@ -588,6 +156,13 @@ class CollibraController:
                         row["property"] + ":"
         return classPath
 
+    @staticmethod
+    def normalize_name(name):
+        result = re.findall(regex, name)
+        result = " ".join(result)
+        return result.replace(" ", "_").replace("/", "-")
+
+
     def processCollibraData(self, ontologyName, ontologyBaseTaxonomy, filter='%'):
         governanceController = GovernanceController.getInstance()
 
@@ -635,86 +210,100 @@ class CollibraController:
         conf_qr_created = 0
         succesfulQr = []
         failedQr = []
+        print(qr_df.count())
+        current_count = 0
+
+        with open('failed_qrs.txt', 'w') as f:
         
-        for element in qr_df.iterrows():
-            # build metadataPath
-            # get the actualDataAsset (confirme the actual metadatapath exist)
-            # assign the Qr
-            nameLike = element[1]["qr_generic_name"]
-            #print(nameLike)
-            qr_template = governanceController.getGenericQR(nameLike)
+            for element in qr_df.iterrows():
+                # build metadataPath
+                # get the actualDataAsset (confirme the actual metadatapath exist)
+                # assign the Qr
+                nameLike = element[1]["qr_generic_name"]
+                #print(nameLike)
+                #qr_template = governanceController.getGenericQR(nameLike)
 
-            class_name = str(element[1]["dd_l0"]).replace(" ", "_").replace("/", "-")
+                class_name = CollibraController.normalize_name(str(element[1]["dd_l0"]))
 
-            l0 = str(element[1]["dd_l0"]).replace(" ", "_").replace("/", "-")
-            l1 = str(element[1]["dd_l1"]).replace(" ", "_").replace("/", "-")
-            l2 = str(element[1]["dd_l2"]).replace(" ", "_").replace("/", "-")
-            l3 = str(element[1]["dd_l3"]).replace(" ", "_").replace("/", "-")
-            
-            columnName = str(element[1]["de_name"]).split("[")[0].rstrip().replace(" ", "_").replace("/", "-")
+                l0 = CollibraController.normalize_name(str(element[1]["dd_l0"]))
+                l1 = CollibraController.normalize_name(str(element[1]["dd_l1"]))
+                l2 = CollibraController.normalize_name(str(element[1]["dd_l2"]))
+                l3 = CollibraController.normalize_name(str(element[1]["dd_l3"]))
+                
+                columnName = CollibraController.normalize_name(CollibraController.normalize_name(str(element[1]["de_name"]).split("[")[0].rstrip()))
 
-            metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0 + "_t"
-            
+                metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0 + "_t"
+                
 
-            if l1 is not None and l1 not in ["", "nan", "None"]:
-                metadataPath = metadataPath + "/" + l1 + "_t"
-                class_name = str(element[1]["dd_l1"]).replace(" ", "_").replace("/", "-")
+                if l1 is not None and l1 not in ["", "nan", "None"]:
+                    metadataPath = metadataPath + "/" + l1 + "_t"
+                    class_name = CollibraController.normalize_name(str(element[1]["dd_l1"]))
 
-            if l2 is not None and l2 not in ["", "nan", "None"]:
-                metadataPath = metadataPath + "/" + l2 + "_t"
-                class_name = str(element[1]["dd_l2"]).replace(" ", "_").replace("/", "-")
+                if l2 is not None and l2 not in ["", "nan", "None"]:
+                    metadataPath = metadataPath + "/" + l2 + "_t"
+                    class_name = CollibraController.normalize_name(str(element[1]["dd_l2"]))
 
-            if l3 is not None and l3 not in ["", "nan", "None"]:
-                metadataPath = metadataPath + "/" + l3 + "_t"
-                class_name = str(element[1]["dd_l3"]).replace(" ", "_").replace("/", "-")
+                if l3 is not None and l3 not in ["", "nan", "None"]:
+                    metadataPath = metadataPath + "/" + l3 + "_t"
+                    class_name = CollibraController.normalize_name(str(element[1]["dd_l3"]))
 
-            metadataPath = metadataPath + ">/:{}:{}:".format(class_name,columnName)
+                metadataPath = metadataPath + ">/:{}:{}:".format(class_name,columnName)
+                if "undrawn" in columnName:
+                    print("inside column name: '", str(element[1]["de_name"]).split("[")[0].rstrip(), "'")
+                    print("columnName: ", columnName)
+                    print("metadatapath: ", metadataPath)
+                    print("-----------------------------------")
+                    print(" ")
+                continue
+                #print(metadataPath)
 
-            #print(metadataPath)
+                qr_template["id"] = -1
+                qr_template["metadataPath"] = metadataPath
+                for cond in qr_template["parameters"]["filter"]["cond"]:
+                    cond["attribute"] = columnName
+                qr_template["catalogAttributeType"] = "RESOURCE"
+                qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
+                qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
+                qr_template["parameters"]["table"]["type"] = "ONTOLOGY"
+                qr_template["name"] = "Completeness_2_test1"
+                qr_template["resultUnit"]["value"] = element[1]["dqr_target"] * 100
+        
+                del qr_template["tenant"]
+                del qr_template["createdAt"]
+                del qr_template["modifiedAt"]
+                del qr_template["userId"]
+                del qr_template["qualityGenericId"]
+                del qr_template["query"]
 
-            qr_template["id"] = -1
-            qr_template["metadataPath"] = metadataPath
-            for cond in qr_template["parameters"]["filter"]["cond"]:
-                cond["attribute"] = columnName
-            qr_template["catalogAttributeType"] = "RESOURCE"
-            qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
-            qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
-            qr_template["parameters"]["table"]["type"] = "ONTOLOGY"
-            qr_template["name"] = "Completeness_2_test1"
-            qr_template["resultUnit"]["value"] = element[1]["dqr_target"] * 100
-    
-            del qr_template["tenant"]
-            del qr_template["createdAt"]
-            del qr_template["modifiedAt"]
-            del qr_template["userId"]
-            del qr_template["qualityGenericId"]
-            del qr_template["query"]
+                #print(qr_template)
 
-            #print(qr_template)
+                res = governanceController.searchDataAssetByMetadataPath(metadataPath)
 
-            res = governanceController.searchDataAssetByMetadataPath(metadataPath)
-
-            if res.get("totalElements", 0) != 0:
-                succesfulQr.append(metadataPath)
-            else:
-                failedQr.append(metadataPath)
-            '''
-            if res.get("totalElements", 0) != 0:
-
-                qr_result = governanceController.addQualityRule(qr_template)
-
-                print(qr_result.text)
-
-                if qr_result is not None and qr_result.ok:
+                if res.get("totalElements", 0) != 0:
                     succesfulQr.append(metadataPath)
-                    comp_qr_created += 1
                 else:
                     failedQr.append(metadataPath)
-            
+                    f.write(metadataPath + '\n')
+                current_count += 1
+                #if current_count == 30:
+                #    break
+                '''
+                if res.get("totalElements", 0) != 0:
 
-            break
+                    qr_result = governanceController.addQualityRule(qr_template)
 
-            '''
+                    print(qr_result.text)
+
+                    if qr_result is not None and qr_result.ok:
+                        succesfulQr.append(metadataPath)
+                        comp_qr_created += 1
+                    else:
+                        failedQr.append(metadataPath)
+                
+
+                break
+
+                '''
         qr_created = comp_qr_created + conf_qr_created + val_qr_created
         # print("Existing Data Elements: {}".format(qr_created))
         print("Sucessfully created: {} quality rules".format(len(succesfulQr)))
@@ -722,6 +311,7 @@ class CollibraController:
         #qrs = governanceController.getQRByName(name="%_Automated%", size=10000)
         #print("Total Collibra QRs Created: {}".format(len(qrs)))
         #return succesfulQr, failedQr, len(qrs)
+        print(failedQr)
         return succesfulQr, failedQr, 0
 
     """
