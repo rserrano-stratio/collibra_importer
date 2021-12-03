@@ -9,8 +9,9 @@ from db_controller import DBController
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 import re
+import copy
 
-regex = "[a-zA-Z0-9\s]+"
+regex = "[a-zA-Z0-9]+"
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -210,9 +211,15 @@ class CollibraController:
         conf_qr_created = 0
         succesfulQr = []
         failedQr = []
-        print(qr_df.count())
+        #print(qr_df.count())
         current_count = 0
 
+        generic_qrs_dict = {}
+
+        genericQRs = governanceController.getGenericQRs()
+        for qr in genericQRs:
+            generic_qrs_dict[qr["name"]] = governanceController.getQRById(qr["id"])
+        
         with open('failed_qrs.txt', 'w') as f:
         
             for element in qr_df.iterrows():
@@ -221,7 +228,7 @@ class CollibraController:
                 # assign the Qr
                 nameLike = element[1]["qr_generic_name"]
                 #print(nameLike)
-                #qr_template = governanceController.getGenericQR(nameLike)
+                qr_template = copy.deepcopy(generic_qrs_dict[nameLike])
 
                 class_name = CollibraController.normalize_name(str(element[1]["dd_l0"]))
 
@@ -238,7 +245,6 @@ class CollibraController:
                 if l1 is not None and l1 not in ["", "nan", "None"]:
                     metadataPath = metadataPath + "/" + l1 + "_t"
                     class_name = CollibraController.normalize_name(str(element[1]["dd_l1"]))
-
                 if l2 is not None and l2 not in ["", "nan", "None"]:
                     metadataPath = metadataPath + "/" + l2 + "_t"
                     class_name = CollibraController.normalize_name(str(element[1]["dd_l2"]))
@@ -248,6 +254,7 @@ class CollibraController:
                     class_name = CollibraController.normalize_name(str(element[1]["dd_l3"]))
 
                 metadataPath = metadataPath + ">/:{}:{}:".format(class_name,columnName)
+                '''
                 if "undrawn" in columnName:
                     print("inside column name: '", str(element[1]["de_name"]).split("[")[0].rstrip(), "'")
                     print("columnName: ", columnName)
@@ -255,7 +262,8 @@ class CollibraController:
                     print("-----------------------------------")
                     print(" ")
                 continue
-                #print(metadataPath)
+                '''
+                #print(qr_template)
 
                 qr_template["id"] = -1
                 qr_template["metadataPath"] = metadataPath
@@ -267,7 +275,8 @@ class CollibraController:
                 qr_template["parameters"]["table"]["type"] = "ONTOLOGY"
                 qr_template["name"] = "Completeness_2_test1"
                 qr_template["resultUnit"]["value"] = element[1]["dqr_target"] * 100
-        
+                
+                #print(qr_template.keys())
                 del qr_template["tenant"]
                 del qr_template["createdAt"]
                 del qr_template["modifiedAt"]
