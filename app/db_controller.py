@@ -10,6 +10,7 @@ import random
 from datetime import timedelta
 import datetime
 from sqlalchemy import text
+from db_models import Base, CollibraStatus, CollibraImportProcess, CollibraDBRecord
 
 Base = declarative_base()
 
@@ -36,9 +37,9 @@ class DBController:
         if DBController.__instance is not None:
             pass
         else:
-            ssl_cert = "cert/db/hsbc-user.crt"
-            ssl_key = "cert/db/hsbc-user.key"
-            ssl_root_cert = "cert/root.crt"
+            ssl_cert = os.getenv('POSTGRES_CERT')
+            ssl_key = os.getenv('POSTGRES_KEY')
+            ssl_root_cert = os.getenv('CA_BUNDLE_PEM')
 
             if self.__db_auth_mode == "cert":
                 ssl_args = {
@@ -168,4 +169,34 @@ class DBController:
         return True
 
     ####################################################  Manage tables  ####################################################
+
+    def add_record(self, obj):
+        with self.session_scope() as s:
+            s.add(obj)
+        return True
+
+    def add_records(self, records):
+        with self.session_scope() as s:
+            s.add_all(records)
+        return True
+
+    def delete_record(self, obj):
+        self.query_session.close()
+        with self.session_scope() as s:
+            s.delete(obj)
+        self.query_session = self.Session()
+        return True
+
+    def find_collibra_status_record(self, stratio_qr_dimension, metadatapath):        
+        result = False
+        q1 = self.query_session.query(CollibraStatus).filter_by(stratio_qr_dimension=stratio_qr_dimension).filter_by(metadatapath=metadatapath).first()
+        return q1
+
+    def exists_collibra_db_record(self, import_process_id, stratio_qr_dimension, metadatapath):        
+        result = False
+        q1 = self.query_session.query(CollibraDBRecord).filter_by(import_process_id=import_process_id).filter_by(stratio_qr_dimension=stratio_qr_dimension).filter_by(metadatapath=metadatapath).first()
+        if q1 is not None:
+            result = True
+        return result
+        
 

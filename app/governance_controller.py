@@ -22,6 +22,11 @@ class GovernanceController:
     __root_url = ""
     __user_role = "SuperAdmin"
 
+    __login_mode = "pass" # pass, cert
+    ssl_cert = os.getenv('POSTGRES_CERT')
+    ssl_key = os.getenv('POSTGRES_KEY')
+    ssl_root_cert = os.getenv('CA_BUNDLE_PEM')
+
     login = '/login'
     governance_login = '/profile'
     governance_path = '/service/dg-businessglossary-api/dictionary/user'
@@ -56,6 +61,12 @@ class GovernanceController:
             self.cookies = self.get_cookies()
             self.cookies_time = datetime.datetime.now()
             GovernanceController.__instance = self
+
+    def get_login_mode(self):
+        return self.__login_mode
+
+    def set_login_mode(self, login_mode):
+        self.__login_mode = login_mode
 
     def get_root_url(self):
         return self.__root_url
@@ -127,6 +138,8 @@ class GovernanceController:
         return login_response
 
     def get_cookies(self):
+        if get_login_mode() == "cert":
+            return {}
         # Login and get cookies
         cookies = self.login_sso(self.sso_url, self.__user, self.__password, self.__tenant).request._cookies
         gov_cookie = requests.get(
@@ -185,9 +198,54 @@ class GovernanceController:
 
         return metadataPath
 
-    def getConceptsDetails(self, metadataPath, conceptFilter="%"):
+    def requestsGet(self, url, params=None, new_headers=None):
         cookies = self.getCookie()
         headers = self.getHeaders()
+        if new_headers is not None:
+            headers = new_headers
+        if get_login_mode == "pass":
+            response = requests.get(url, headers=headers, params=params, cookies=cookies, verify=False)
+        else:
+            response = requests.get(url, headers=headers, params=params, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
+        return response
+    
+    def requestsPostJSON(self, url, data_json=None):
+        cookies = self.getCookie()
+        headers = self.getHeaders()
+        if get_login_mode == "pass":
+            response = requests.post(url, headers=headers, cookies=cookies, json=data_json, verify=False)
+        else:
+            response = requests.post(url, headers=headers, cookies=cookies, json=data_json, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
+        return response
+
+    def requestsPostFiles(self, url, headers=None, params=None, files=None):
+        cookies = self.getCookie()
+        #headers = self.getHeaders()
+        if get_login_mode == "pass":
+            response = requests.post(url, headers=new_headers, params=params, files=files, cookies=self.getCookie(), verify=False)
+        else:
+            response = requests.post(url, headers=new_headers, params=params, files=files, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
+        return response
+
+    def requestsDelete(self, url):
+        cookies = self.getCookie()
+        headers = self.getHeaders()
+        if get_login_mode == "pass":
+            response = requests.delete(url, headers=headers, cookies=cookies, verify=False)
+        else:
+            response = requests.delete(url, headers=headers, params=params, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
+        return response
+
+    def requestsPut(self, url, params=None):
+        cookies = self.getCookie()
+        headers = self.getHeaders()
+        if get_login_mode == "pass":
+            response = requests.put(url, headers=headers, params=params, cookies=cookies, verify=False)
+        else:
+            response = requests.put(url, headers=headers, params=params, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
+        return response
+
+    def getConceptsDetails(self, metadataPath, conceptFilter="%"):
 
         params = (
             ('size', '10'),
@@ -198,9 +256,7 @@ class GovernanceController:
             ('subtypeIn', 'RESOURCE,PATH'),
         )
 
-        response = requests.get(
-            self.getApiUrl() + '/dictionary/user/catalog/v1/dataAsset/searchByMetadataPathLikeAndTypeNotInAndSubtypeIn',
-            headers=headers, params=params, cookies=cookies, verify=False)
+        response = requestGet(self.getApiUrl() + '/dictionary/user/catalog/v1/dataAsset/searchByMetadataPathLikeAndTypeNotInAndSubtypeIn', params=params)
 
         if response.status_code in [200, 201] and response.json().get("totalElements", None) is not None:
             return response.json()["dataAssets"]["dataAssets"]
@@ -217,8 +273,7 @@ class GovernanceController:
         headers = self.getHeaders()
         cookies = self.getCookie()
 
-        response = requests.post(self.getApiUrl() + '/dictionary/user/quality/v1/quality', headers=headers,
-                                 cookies=cookies, json=qr_json, verify=False)
+        response = self.requestsPostJSON(self.getApiUrl() + '/dictionary/user/quality/v1/quality', data_json=qr_json)
 
         # print(response.status_code)
         # print(response.content)
@@ -229,9 +284,7 @@ class GovernanceController:
         headers = self.getHeaders()
         cookies = self.getCookie()
 
-        response = requests.delete(
-            self.getApiUrl() + '/dictionary/user/quality/v1/quality/' + str(qr_id),
-            headers=headers, cookies=cookies, verify=False)
+        response = self.requestsDelete(self.getApiUrl() + '/dictionary/user/quality/v1/quality/' + str(qr_id))
 
         return response
 
@@ -244,8 +297,7 @@ class GovernanceController:
             ('metadataPathLike', metadataPath),
         )
 
-        response = requests.get(self.getApiUrl() + '/dictionary/user/catalog/v1/dataAsset/searchByMetadataPathLike',
-                                headers=headers, params=params, cookies=cookies, verify=False)
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/catalog/v1/dataAsset/searchByMetadataPathLike', params=params)
 
         return response.json()
 
@@ -263,9 +315,7 @@ class GovernanceController:
             'file': (path_tail, open(filepath, 'rb'), "application/rdf+xml")
         }
 
-        response = requests.post(self.getOntologyAPIUrl() + '/ontology/importOntology',
-                                 headers=new_headers, params=params, files=files, cookies=self.getCookie(),
-                                 verify=False)
+        response = self.requestsPostFiles(self.getOntologyAPIUrl() + '/ontology/importOntology', headers=new_headers, params=params, files=files)
         return response
 
     def downloadOntology(self, ontologyName, ontologyBase="https://www.stratio.com"):
@@ -280,8 +330,7 @@ class GovernanceController:
             ('ontologyName', ontologyName),
         )
 
-        response = requests.get(self.getOntologyAPIUrl() + '/ontology/exportOntology',
-                                headers=new_headers, params=params, cookies=self.getCookie(), verify=False)
+        response = self.requestsGet(self.getOntologyAPIUrl() + '/ontology/exportOntology', params=params, new_headers=new_headers)
 
         if response is not None and response.ok:
             with open(output_fn, mode='wb') as localfile:
@@ -290,8 +339,6 @@ class GovernanceController:
         return output_fn
 
     def getQR(self, size=10, metadataPath='_%'):
-        headers = self.getHeaders()
-        cookies = self.getCookie()
 
         params = (
             ('size', size),
@@ -300,15 +347,11 @@ class GovernanceController:
             ('metadataPathLike', metadataPath),
         )
 
-        response = requests.get(
-            self.getApiUrl() + '/dictionary/user/quality/v1/quality',
-            headers=headers, params=params, cookies=cookies, verify=False)
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/quality/v1/quality', params=params)
 
         return response.json()
 
     def getQRByName(self, metadataPath='_%', name='%', size=10):
-        headers = self.getHeaders()
-        cookies = self.getCookie()
 
         params = (
             ('size', size),
@@ -318,68 +361,52 @@ class GovernanceController:
             ('nameLike', name),
         )
 
-        response = requests.get(self.getApiUrl() + '/dictionary/user/quality/v1/quality',
-                                headers=headers, params=params, cookies=cookies, verify=False)
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/quality/v1/quality', params=params)
         try:
             return response.json().get("content", [])
         except Exception as e:
             return []
 
     def getAttributes(self, metadataPath):
-        headers = self.getHeaders()
-        cookies = self.getCookie()
 
         params = (
             ('relation', 'false'),
             ('metadataPath', metadataPath),
         )
 
-        response = requests.get(
-            self.getApiUrl() + '/dictionary/user/catalog/v1/keyDataAsset/searchByMetadataPath',
-            headers=headers, params=params, cookies=cookies, verify=False)
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/catalog/v1/keyDataAsset/searchByMetadataPath', params=params)
 
         return response.json()
 
     def getQrInMetadataPath(self, metadataPath, size=500):
-        cookies = self.getCookie()
-        headers = self.getHeaders()
 
         params = (
             ('size', size),
             ('metadataPathLike', metadataPath),
         )
 
-        response = requests.get(
-            self.getApiUrl() + '/dictionary/user/quality/v1/quality/searchByMetadataPathLike', headers=headers,
-            params=params, cookies=cookies, verify=False)
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/quality/v1/quality/searchByMetadataPathLike', params=params)
 
         return response.json()
 
     def getConceptsRelated(self, metadataPath):
-        cookies = self.getCookie()
-        headers = self.getHeaders()
 
         params = (
             ('relation', 'true'),
             ('metadataPath', metadataPath),
         )
 
-        response = requests.get(
-            self.getApiUrl() + '/dictionary/user/catalog/v1/keyDataAsset/searchByMetadataPath',
-            headers=headers, params=params, cookies=cookies, verify=False)
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/catalog/v1/keyDataAsset/searchByMetadataPath', params=params)
 
         return response.json()
 
     def key_searchByKeyLike(self, key_filter="%"):
-        cookies = self.getCookie()
-        headers = self.getHeaders()
 
         params = (
             ('keyLike', key_filter),
         )
 
-        response = requests.get(self.getApiUrl() + '/dictionary/user/catalog/v1/key/searchByKeyLike',
-                                headers=headers, params=params, cookies=cookies, verify=False)
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/catalog/v1/key/searchByKeyLike', params=params)
 
         try:
             return response.json().get("content", [])
@@ -399,18 +426,13 @@ class GovernanceController:
         data["valueDesign"]["subType"] = key_subType
         data["valueDesign"]["value"] = key_value
 
-        cookies = self.getCookie()
-        headers = self.getHeaders()
-        response = requests.post(self.getApiUrl() + '/dictionary/user/catalog/v1/key',
-                                 headers=headers, json=data, cookies=cookies, verify=False)
+        response = self.requestsPostJSON(self.getApiUrl() + '/dictionary/user/catalog/v1/key', data_json=data)
         try:
             response.json()["id"]
         except Exception as e:
             return -1
 
     def getGenericQRs(self):
-        cookies = self.getCookie()
-        headers = self.getHeaders()
         params = (
             ('size', '999'),
             ('page', '0'),
@@ -418,8 +440,7 @@ class GovernanceController:
             ('metadataPathLike', ''),
         )
 
-        response = requests.get(self.getApiUrl() + '/dictionary/user/quality/v1/quality',
-                                headers=headers, params=params, cookies=cookies, verify=False)
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/quality/v1/quality', params=params)
         try:
             data = response.json()
             totalElements = data.get("totalElements", 0)
@@ -430,8 +451,6 @@ class GovernanceController:
             return []
 
     def getGenericQR(self, qrName):
-        cookies = self.getCookie()
-        headers = self.getHeaders()
         genericQRs = self.getGenericQRs()
         foundQR = None
         for qr in genericQRs:
@@ -439,13 +458,22 @@ class GovernanceController:
                 foundQR = qr
                 break
         if foundQR is not None:
-            response = requests.get(self.getApiUrl() + '/dictionary/user/quality/v1/quality/' + str(foundQR["id"]),
-                                    headers=headers, cookies=cookies, verify=False)
+            response = self.requestsGet(self.getApiUrl() + '/dictionary/user/quality/v1/quality/' + str(foundQR["id"]), params=params)
             try:
                 return response.json()
             except Exception as e:
                 return None
         return None
+
+    def getQRByID(self, id):
+        params = (
+            ('id', id)
+        )
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/quality/v1/quality/' + str(id), params=params)
+        try:
+            return response.json()
+        except Exception as e:
+            return None
 
     def getCustomQRFromGeneric(self, genericQRName, attributeName, metadataPath, namePrefix="", dqDimension="",
                                extraParams=[]):
@@ -605,8 +633,6 @@ class GovernanceController:
         df_mapping["dst_ontologyMDP"] = "ontologies://" + df_mapping[
             "dst_class_full_path"] + ">/:" + df_mapping["dst_property"] + ":"
 
-        cookies = self.getCookie()
-        headers = self.getHeaders()
 
         attribute = self.key_searchByKeyLike("%related to%")[0]
         attribute_id = attribute["id"]
@@ -651,8 +677,7 @@ class GovernanceController:
                 data[0]["value"]["value"]["metadataPath"] = row[1]["dst_ontologyMDP"]
                 data[0]["metadataPath"] = row[1]["src_ontologyMDP"]
 
-                response = requests.post(self.getApiUrl() + '/dictionary/user/catalog/v1/keyDataAsset',
-                                         headers=headers, cookies=cookies, json=data, verify=False)
+                response = self.requestsPostJSON(self.getApiUrl() + '/dictionary/user/catalog/v1/keyDataAsset', data_json=data)
                 if response.ok:
                     connected_properties_count += 1
         return connected_properties_count
