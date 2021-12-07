@@ -10,7 +10,7 @@ import random
 from datetime import timedelta
 import datetime
 from sqlalchemy import text
-from db_models import Base, CollibraStatus, CollibraImportProcess, CollibraDBRecord
+from db_models import Base as models, CollibraImportProcess, CollibraDBRecord, CollibraStatus
 
 Base = declarative_base()
 
@@ -94,14 +94,14 @@ class DBController:
 
     ####################################################  Manage Databases  ####################################################
     def recreate_database(self):
-        Base.metadata.drop_all(self.engine)
-        Base.metadata.create_all(self.engine)
+        models.metadata.drop_all(self.engine)
+        models.metadata.create_all(self.engine)
 
     def create_database(self):
-        Base.metadata.create_all(self.engine)
+        models.metadata.create_all(self.engine)
 
     def drop_database(self):
-        Base.metadata.drop_all(self.engine)
+        models.metadata.drop_all(self.engine)
 
     ####################################################  Manage Queries  ####################################################
     def truncate_table(self, table):
@@ -175,6 +175,13 @@ class DBController:
             s.add(obj)
         return True
 
+    def add_record_with_return(self, obj):
+        with self.session_scope() as s:
+            s.add(obj)
+            s.commit()
+            s.refresh(obj)
+            return obj.id
+
     def add_records(self, records):
         with self.session_scope() as s:
             s.add_all(records)
@@ -189,12 +196,12 @@ class DBController:
 
     def find_collibra_status_record(self, stratio_qr_dimension, metadatapath):        
         result = False
-        q1 = self.query_session.query(CollibraStatus).filter_by(stratio_qr_dimension=stratio_qr_dimension).filter_by(metadatapath=metadatapath).first()
+        q1 = self.get_query_session().query(CollibraStatus).filter_by(stratio_qr_dimension=stratio_qr_dimension).filter_by(metadatapath=metadatapath).first()
         return q1
 
     def exists_collibra_db_record(self, import_process_id, stratio_qr_dimension, metadatapath):        
         result = False
-        q1 = self.query_session.query(CollibraDBRecord).filter_by(import_process_id=import_process_id).filter_by(stratio_qr_dimension=stratio_qr_dimension).filter_by(metadatapath=metadatapath).first()
+        q1 = self.get_query_session().query(CollibraDBRecord).filter_by(import_process_id=import_process_id).filter_by(stratio_qr_dimension=stratio_qr_dimension).filter_by(metadatapath=metadatapath).first()
         if q1 is not None:
             result = True
         return result

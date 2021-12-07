@@ -1,5 +1,7 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean
+from sqlalchemy.sql import func
+
 
 Base = declarative_base()
 
@@ -40,6 +42,6 @@ class CollibraStatus(Base):
     stratio_qr_active = Column(Boolean)
     qr_threshold = Column(Float)
     creation_date = Column(DateTime(timezone=True), server_default=func.now())
-    update_date = CColumn(DateTime(timezone=True), onupdate=func.now())
+    update_date = Column(DateTime(timezone=True), onupdate=func.now())
     import_process_id = Column(Integer)
 

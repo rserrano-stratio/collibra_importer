@@ -138,7 +138,7 @@ class GovernanceController:
         return login_response
 
     def get_cookies(self):
-        if get_login_mode() == "cert":
+        if self.get_login_mode() == "cert":
             return {}
         # Login and get cookies
         cookies = self.login_sso(self.sso_url, self.__user, self.__password, self.__tenant).request._cookies
@@ -203,7 +203,7 @@ class GovernanceController:
         headers = self.getHeaders()
         if new_headers is not None:
             headers = new_headers
-        if get_login_mode == "pass":
+        if self.get_login_mode() == "pass":
             response = requests.get(url, headers=headers, params=params, cookies=cookies, verify=False)
         else:
             response = requests.get(url, headers=headers, params=params, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
@@ -212,7 +212,7 @@ class GovernanceController:
     def requestsPostJSON(self, url, data_json=None):
         cookies = self.getCookie()
         headers = self.getHeaders()
-        if get_login_mode == "pass":
+        if self.get_login_mode() == "pass":
             response = requests.post(url, headers=headers, cookies=cookies, json=data_json, verify=False)
         else:
             response = requests.post(url, headers=headers, cookies=cookies, json=data_json, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
@@ -221,7 +221,7 @@ class GovernanceController:
     def requestsPostFiles(self, url, headers=None, params=None, files=None):
         cookies = self.getCookie()
         #headers = self.getHeaders()
-        if get_login_mode == "pass":
+        if self.get_login_mode() == "pass":
             response = requests.post(url, headers=new_headers, params=params, files=files, cookies=self.getCookie(), verify=False)
         else:
             response = requests.post(url, headers=new_headers, params=params, files=files, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
@@ -230,7 +230,7 @@ class GovernanceController:
     def requestsDelete(self, url):
         cookies = self.getCookie()
         headers = self.getHeaders()
-        if get_login_mode == "pass":
+        if self.get_login_mode() == "pass":
             response = requests.delete(url, headers=headers, cookies=cookies, verify=False)
         else:
             response = requests.delete(url, headers=headers, params=params, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
@@ -239,7 +239,7 @@ class GovernanceController:
     def requestsPut(self, url, params=None):
         cookies = self.getCookie()
         headers = self.getHeaders()
-        if get_login_mode == "pass":
+        if self.get_login_mode() == "pass":
             response = requests.put(url, headers=headers, params=params, cookies=cookies, verify=False)
         else:
             response = requests.put(url, headers=headers, params=params, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
