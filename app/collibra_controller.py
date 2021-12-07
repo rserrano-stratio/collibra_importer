@@ -9,6 +9,10 @@ from db_controller import DBController
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from db_models import CollibraStatus, CollibraImportProcess, CollibraDBRecord
+import re
+import copy
+
+regex = "[a-zA-Z0-9]+"
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -57,7 +61,6 @@ class CollibraController:
         else:
             CollibraController.__dbc = DBController.getInstance()
             CollibraController.__instance = self
-
 
     @staticmethod
     def generateTaxonomy_old(row):
@@ -179,7 +182,7 @@ class CollibraController:
             classPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + row["entity"] + ">/:" + \
                         row["property"] + ":"
         return classPath
-    
+
     def register_collibra_process(self, records_count):
         collibra_process = CollibraImportProcess()
         collibra_process.records_count = records_count
@@ -213,6 +216,13 @@ class CollibraController:
 
     def getLastCollibraProcessID(self):
         pass
+
+    @staticmethod
+    def normalize_name(name):
+        result = re.findall(regex, name)
+        result = " ".join(result)
+        return result.replace(" ", "_").replace("/", "-")
+
 
     def processCollibraData(self, ontologyName, ontologyBaseTaxonomy, filter='%'):
         governanceController = GovernanceController.getInstance()
@@ -266,116 +276,139 @@ class CollibraController:
         conf_qr_created = 0
         succesfulQr = []
         failedQr = []
+        #print(qr_df.count())
+        current_count = 0
+
+        generic_qrs_dict = {}
+
+        genericQRs = governanceController.getGenericQRs()
+        for qr in genericQRs:
+            generic_qrs_dict[qr["name"]] = governanceController.getQRById(qr["id"])
         
-        for element in qr_df.iterrows():
-            # build metadataPath
-            # get the actualDataAsset (confirme the actual metadatapath exist)
-            # assign the Qr
-            nameLike = element[1]["qr_generic_name"]
-            #print(nameLike)
-            qr_template = governanceController.getGenericQR(nameLike)
+        with open('failed_qrs.txt', 'w') as f:
+        
+            for element in qr_df.iterrows():
+                # build metadataPath
+                # get the actualDataAsset (confirme the actual metadatapath exist)
+                # assign the Qr
+                nameLike = element[1]["qr_generic_name"]
+                #print(nameLike)
+                qr_template = copy.deepcopy(generic_qrs_dict[nameLike])
 
-            class_name = str(element[1]["dd_l0"]).replace(" ", "_").replace("/", "-")
+                class_name = CollibraController.normalize_name(str(element[1]["dd_l0"]))
 
-            l0 = str(element[1]["dd_l0"]).replace(" ", "_").replace("/", "-")
-            l1 = str(element[1]["dd_l1"]).replace(" ", "_").replace("/", "-")
-            l2 = str(element[1]["dd_l2"]).replace(" ", "_").replace("/", "-")
-            l3 = str(element[1]["dd_l3"]).replace(" ", "_").replace("/", "-")
-            
-            columnName = str(element[1]["de_name"]).split("[")[0].rstrip().replace(" ", "_").replace("/", "-")
-
-            metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0 + "_t"
-            
-
-            if l1 is not None and l1 not in ["", "nan", "None"]:
-                metadataPath = metadataPath + "/" + l1 + "_t"
-                class_name = str(element[1]["dd_l1"]).replace(" ", "_").replace("/", "-")
-
-            if l2 is not None and l2 not in ["", "nan", "None"]:
-                metadataPath = metadataPath + "/" + l2 + "_t"
-                class_name = str(element[1]["dd_l2"]).replace(" ", "_").replace("/", "-")
-
-            if l3 is not None and l3 not in ["", "nan", "None"]:
-                metadataPath = metadataPath + "/" + l3 + "_t"
-                class_name = str(element[1]["dd_l3"]).replace(" ", "_").replace("/", "-")
-
-            metadataPath = metadataPath + ">/:{}:{}:".format(class_name,columnName)
-
-            #print(metadataPath)
-
-            ### Collibra Record
-            collibra_record = CollibraRecord(l0, l1, l2, l3, columnName, element[1]["dc_requirement_description"], element[1]["req_dimension_id"], element[1]["dqr_target"], nameLike)
-            collibra_db_record = CollibraDBRecord()
-            collibra_db_record.dd_l0 = collibra_record.dd_l0
-            collibra_db_record.dd_l1 = collibra_record.dd_l1
-            collibra_db_record.dd_l2 = collibra_record.dd_l2
-            collibra_db_record.dd_l3 = collibra_record.dd_l3
-            collibra_db_record.de_name = collibra_record.de_name
-            collibra_db_record.dc_requirement_description = collibra_record.dc_requirement_description
-            collibra_db_record.req_dimension_id = collibra_record.req_dimension_id
-            collibra_db_record.dqr_target = collibra_record.dqr_target
-            collibra_db_record.qr_generic_name = collibra_record.qr_generic_name
-            collibra_db_record.import_process_id = collibra_process_id
-            collibra_db_record.stratio_qr_dimension = nameLike
-            collibra_db_record.metadatapath = metadataPath
-
-            self.__dbc.add_record(collibra_db_record)
-            ### End of Collibra Record
-
-            qr_template["id"] = -1
-            qr_template["metadataPath"] = metadataPath
-            for cond in qr_template["parameters"]["filter"]["cond"]:
-                cond["attribute"] = columnName
-            qr_template["catalogAttributeType"] = "RESOURCE"
-            qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
-            qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
-            qr_template["parameters"]["table"]["type"] = "ONTOLOGY"
-            qr_template["name"] = "Completeness_2_test1"
-            qr_template["resultUnit"]["value"] = element[1]["dqr_target"] * 100
-    
-            del qr_template["tenant"]
-            del qr_template["createdAt"]
-            del qr_template["modifiedAt"]
-            del qr_template["userId"]
-            del qr_template["qualityGenericId"]
-            del qr_template["query"]
-
-            #print(qr_template)
-
-            res = governanceController.searchDataAssetByMetadataPath(metadataPath)
-
-            if res.get("totalElements", 0) != 0:
-                succesfulQr.append(metadataPath)
-            else:
-                failedQr.append(metadataPath)
-            '''
-            if res.get("totalElements", 0) != 0:
-                add_qr = True
-                # Check If Status already exists
-                # If exists, check if it is the same
-                if self.__dbc.find_collibra_status_record(nameLike, metadataPath) is not None:
-                    #TBI, Check if it is not the same then, delete and create
-                    add_qr = False
-                    pass
+                l0 = CollibraController.normalize_name(str(element[1]["dd_l0"]))
+                l1 = CollibraController.normalize_name(str(element[1]["dd_l1"]))
+                l2 = CollibraController.normalize_name(str(element[1]["dd_l2"]))
+                l3 = CollibraController.normalize_name(str(element[1]["dd_l3"]))
                 
-                if add_qr:
-                    qr_result = governanceController.addQualityRule(qr_template)
+                columnName = CollibraController.normalize_name(CollibraController.normalize_name(str(element[1]["de_name"]).split("[")[0].rstrip()))
 
-                    #print(qr_result.text)
+                metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + l0 + "_t"
+                
 
-                    if qr_result is not None and qr_result.ok:
-                        succesfulQr.append(metadataPath)
-                        comp_qr_created += 1
-                        qr_id = qr_result.json().get("id")
-                        #register_collibra_status(self, metadatapath, qr_dimension, qr_name, qr_id, qr_status, qr_active, qr_threshold, import_process_id)
-                        self.register_collibra_status(metadataPath, nameLike, qr_template["name"], qr_id, "Active", True, qr_template["resultUnit"]["value"], collibra_process_id)
-                    else:
-                        failedQr.append(metadataPath)
-            
+                if l1 is not None and l1 not in ["", "nan", "None"]:
+                    metadataPath = metadataPath + "/" + l1 + "_t"
+                    class_name = CollibraController.normalize_name(str(element[1]["dd_l1"]))
+                if l2 is not None and l2 not in ["", "nan", "None"]:
+                    metadataPath = metadataPath + "/" + l2 + "_t"
+                    class_name = CollibraController.normalize_name(str(element[1]["dd_l2"]))
 
-            break
+                if l3 is not None and l3 not in ["", "nan", "None"]:
+                    metadataPath = metadataPath + "/" + l3 + "_t"
+                    class_name = CollibraController.normalize_name(str(element[1]["dd_l3"]))
 
-            '''
+                metadataPath = metadataPath + ">/:{}:{}:".format(class_name,columnName)
+                '''
+                if "undrawn" in columnName:
+                    print("inside column name: '", str(element[1]["de_name"]).split("[")[0].rstrip(), "'")
+                    print("columnName: ", columnName)
+                    print("metadatapath: ", metadataPath)
+                    print("-----------------------------------")
+                    print(" ")
+                continue
+                '''
+                #print(qr_template)
+
+                ### Collibra Record
+                collibra_record = CollibraRecord(l0, l1, l2, l3, columnName, element[1]["dc_requirement_description"], element[1]["req_dimension_id"], element[1]["dqr_target"], nameLike)
+                collibra_db_record = CollibraDBRecord()
+                collibra_db_record.dd_l0 = collibra_record.dd_l0
+                collibra_db_record.dd_l1 = collibra_record.dd_l1
+                collibra_db_record.dd_l2 = collibra_record.dd_l2
+                collibra_db_record.dd_l3 = collibra_record.dd_l3
+                collibra_db_record.de_name = collibra_record.de_name
+                collibra_db_record.dc_requirement_description = collibra_record.dc_requirement_description
+                collibra_db_record.req_dimension_id = collibra_record.req_dimension_id
+                collibra_db_record.dqr_target = collibra_record.dqr_target
+                collibra_db_record.qr_generic_name = collibra_record.qr_generic_name
+                collibra_db_record.import_process_id = collibra_process_id
+                collibra_db_record.stratio_qr_dimension = nameLike
+                collibra_db_record.metadatapath = metadataPath
+
+                self.__dbc.add_record(collibra_db_record)
+                ### End of Collibra Record
+
+                qr_template["id"] = -1
+                qr_template["metadataPath"] = metadataPath
+                for cond in qr_template["parameters"]["filter"]["cond"]:
+                    cond["attribute"] = columnName
+                qr_template["catalogAttributeType"] = "RESOURCE"
+                qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
+                qr_template["parameters"]["catalogAttributeType"] = "RESOURCE"
+                qr_template["parameters"]["table"]["type"] = "ONTOLOGY"
+                qr_template["name"] = "Completeness_2_test1"
+                qr_template["resultUnit"]["value"] = element[1]["dqr_target"] * 100
+                
+                #print(qr_template.keys())
+                del qr_template["tenant"]
+                del qr_template["createdAt"]
+                del qr_template["modifiedAt"]
+                del qr_template["userId"]
+                del qr_template["qualityGenericId"]
+                del qr_template["query"]
+
+                #print(qr_template)
+
+                res = governanceController.searchDataAssetByMetadataPath(metadataPath)
+
+                if res.get("totalElements", 0) != 0:
+                    succesfulQr.append(metadataPath)
+                else:
+                    failedQr.append(metadataPath)
+                    f.write(metadataPath + '\n')
+                current_count += 1
+                #if current_count == 30:
+                #    break
+                '''
+                if res.get("totalElements", 0) != 0:
+                    add_qr = True
+                    # Check If Status already exists
+                    # If exists, check if it is the same
+                    if self.__dbc.find_collibra_status_record(nameLike, metadataPath) is not None:
+                        #TBI, Check if it is not the same then, delete and create
+                        add_qr = False
+                        pass
+                    
+                    if add_qr:
+                        qr_result = governanceController.addQualityRule(qr_template)
+
+                        #print(qr_result.text)
+
+                        if qr_result is not None and qr_result.ok:
+                            succesfulQr.append(metadataPath)
+                            comp_qr_created += 1
+                            qr_id = qr_result.json().get("id")
+                            #register_collibra_status(self, metadatapath, qr_dimension, qr_name, qr_id, qr_status, qr_active, qr_threshold, import_process_id)
+                            self.register_collibra_status(metadataPath, nameLike, qr_template["name"], qr_id, "Active", True, qr_template["resultUnit"]["value"], collibra_process_id)
+                        else:
+                            failedQr.append(metadataPath)
+                
+
+                        qr_result = governanceController.addQualityRule(qr_template)
+
+                '''
+        
         # At the end of the process, we need to check if there is a need to delete a created QR because it does not exist in Collibra any more
         # To do so, we compare status table for this import ID, with the table input of the previous Collibra Import Process
         # We need to query CollibraStatus table, get unique Metadtapath & Dimension QRs
@@ -396,7 +429,59 @@ class CollibraController:
         #qrs = governanceController.getQRByName(name="%_Automated%", size=10000)
         #print("Total Collibra QRs Created: {}".format(len(qrs)))
         #return succesfulQr, failedQr, len(qrs)
+        print(failedQr)
         return succesfulQr, failedQr, 0
+
+    """
+            for element in qr_df.iterrows():
+            # build metadataPath
+            # get the actualDataAsset (confirm the actual metadatapath exist)
+            # assign the Qr
+
+            l0 = str(element[1]["dd_l0"]).lower().replace(" ", "_")
+            l1 = str(element[1]["dd_l1"]).lower().replace(" ", "_")
+            l2 = str(element[1]["dd_l2"]).lower().replace(" ", "_")
+            l3 = str(element[1]["dd_l3"]).lower().replace(" ", "_")
+            # columnName = str(element[1]["de_name"]).lower().replace(" ", "_").replace("[", "").replace("]", "")
+
+            row = {
+                "CDM L1": l0,
+                "CDM L2": l1,
+                "CDM L3": l2,
+                "HSBC Data Model Data Element": element[1]["de_name"]
+            }
+            taxonomy_path = CollibraController.generateTaxonomy(row)
+            entity = CollibraController.generateEntity(row)
+            property = CollibraController.generateProperty(row)
+            class_full_path = CollibraController.getClassFullPath({"entity": entity, "taxonomy_path": taxonomy_path})
+            dp_full_path = class_full_path + "/" + property
+
+            metadataPath = 'ontologies://{}/{}'.format(ontologyName, ontologyBaseTaxonomy) + "/" + class_full_path
+
+            metadataPath = metadataPath + ">/:{}:".format(property)
+            # print(metadataPath)
+            res = governanceController.searchDataAssetByMetadataPath(metadataPath)
+            # print("Found" if res.get("totalElements", 0) != 0 else "Not found")
+            # print("===========================================================")
+            if res.get("totalElements", 0) != 0:
+                print("Found: " + str(metadataPath))
+                column_qr = self.getCompletenessQr(property, metadataPath,
+                                                   str(element[1]["dqr_published_indicator"]).lower() == "true",
+                                                   str(element[1]["dq_target"]))
+
+                qr_result = None
+                try:
+                    qr_result = governanceController.addQualityRule(column_qr)
+                except Exception as e:
+                    print("Exception happened while creating the Quality Rule: " + str(e))
+
+                if qr_result is not None and qr_result.ok:
+                    succesfulQr.append(metadataPath)
+                else:
+                    failedQr.append(metadataPath)
+
+                qr_created += 1
+    """
 
     def truncateTables(self):
         for table in CollibraController.tables:
