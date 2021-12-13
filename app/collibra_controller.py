@@ -48,6 +48,7 @@ class CollibraController:
     __dbc = None
     tables = ["dataconcepts", "datadomains", "dataelements", "dataqualityrules", "dqrequirements",
 "dqrequirementsfacts", "elementdictionary", "rulerequirementmapping", "conceptdictionary","mappingqrs"]
+    control_tables = [CollibraImportProcess.__tablename__, CollibraStatus.__tablename__, CollibraDBRecord.__tablename__]
 
     @staticmethod
     def getInstance():
@@ -235,6 +236,21 @@ class CollibraController:
         result = " ".join(result)
         return result.replace(" ", "_").replace("/", "-")
 
+    def deleteCollibraCreatedQRs(self):
+        governanceController = GovernanceController.getInstance()
+        all_created_qrs = self.__dbc.get_all(CollibraStatus)
+        all_deleted = True
+        deleted_qrs_count = 0
+        for created_qr in all_created_qrs:
+            try:
+                print(created_qr.stratio_qr_id)
+                governanceController.deleteQualityRule(created_qr.stratio_qr_id)
+                deleted_qrs_count += 1
+            except Exception as e:
+                all_deleted = False
+                print("Error deleting QR with id: " + str(created_qr.stratio_qr_id))
+                pass
+        return all_deleted, deleted_qrs_count
 
     def processCollibraData(self, ontologyName, ontologyBaseTaxonomy, filter='%'):
         governanceController = GovernanceController.getInstance()
@@ -462,6 +478,14 @@ class CollibraController:
 
     def truncateTables(self):
         for table in CollibraController.tables:
+            try:
+                self.__dbc.truncate_table(table)
+            except Exception as e:
+                print("Failed to truncate table: {}".format(table))
+                pass
+    
+    def truncateControlTables(self):
+        for table in CollibraController.control_tables:
             try:
                 self.__dbc.truncate_table(table)
             except Exception as e:

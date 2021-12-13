@@ -87,6 +87,18 @@ def replicate_quality_rules(ontology: str = "hsbc_bm_v2"):
     output = GovernanceController.getInstance().replicate_qrs(ontology)
     return {"Replicated_QRs": output}
 
+@app.post("/delete_collibra_quality_rules")
+def delete_collibra_quality_rules():
+    all_deleted, deleted_qrs_count = controller.deleteCollibraCreatedQRs()
+    return {"Deleted_QRs": deleted_qrs_count}
+
+@app.post("/purge_collibra_data")
+def purge_collibra_data():
+    all_deleted, deleted_qrs_count = controller.deleteCollibraCreatedQRs()
+    if all_deleted:
+        controller.truncateTables()
+        controller.truncateControlTables()
+    return {"success": all_deleted, "Deleted_QRs": deleted_qrs_count}
 
 @app.post("/connect_ontologies/")
 def connect_ontologies(file: UploadFile = File(...)):
