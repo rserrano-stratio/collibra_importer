@@ -155,6 +155,18 @@ class CollibraController:
             "/", "or").replace(",", "").replace("-", "").replace(".", "")
 
     @staticmethod
+    def get_all_values(d):
+        if isinstance(d, dict):
+            for v in d.values():
+                yield from CollibraController.get_all_values(v)
+        elif isinstance(d, list):
+            for v in d:
+                yield from CollibraController.get_all_values(v)
+        else:
+            yield d 
+
+
+    @staticmethod
     def getClassFullPath_old(row):
         classPath = row["entity"]
 
@@ -242,9 +254,10 @@ class CollibraController:
                     join dqrequirements dc 
                     on req.data_quality_requirement_id = dc.collibra_resource_id
                     join mappingqrs mqc
-                    on dc.requirement_description = mqc.requirement_description
+                    on dc.requirement_description = mqc.requirement_description and mqc.stratio_qr_dimension is not null
                     where dc.published_indicator = 1
                 '''
+        #TODO check null in stratio_qr_dimension and change mappings qrs csv with all rows, check if condition have VAR, if have VAR make inactive qr, delete counter
         engine = self.__dbc.engine
         qr_df = pd.read_sql_query(qrQuery, engine)
 
@@ -358,6 +371,8 @@ class CollibraController:
                 qr_template["metadataPath"] = metadataPath
                 for cond in qr_template["parameters"]["filter"]["cond"]:
                     cond["attribute"] = columnName
+                    if any(x in ['VAR', 'VAR1', 'VAR2'] for x in CollibraController.get_all_values(cond)):
+                        qr_template["active"] = False
                 qr_template["name"] = "{}-{}-{}".format(class_name, columnName, nameLike)
                 threshold_float = element[1]["dqr_target"] * 100
                 qr_template["resultUnit"]["value"] = str(threshold_float).replace(".",",")
@@ -396,8 +411,14 @@ class CollibraController:
                             succesfulQr.append(metadataPath)
                             comp_qr_created += 1
                             qr_id = qr_result.json().get("id")
+                            qr_active = True
+                            qr_status = "Active"
+                            if not qr_template["active"]:
+                                qr_active = False
+                                qr_status = "Inactive"
+                                
                             #register_collibra_status(self, metadatapath, qr_dimension, qr_name, qr_id, qr_status, qr_active, qr_threshold, import_process_id)
-                            self.register_collibra_status(metadataPath, nameLike, qr_template["name"], qr_id, "Active", True, threshold_float, collibra_process_id)
+                            self.register_collibra_status(metadataPath, nameLike, qr_template["name"], qr_id, qr_status, qr_active, threshold_float, collibra_process_id)
 
                         else:
                             failedQr.append(metadataPath)
@@ -416,11 +437,14 @@ class CollibraController:
         # We need to query CollibraStatus table, get unique Metadtapath & Dimension QRs
         # Look for them in the CollibraDBRecord for this processID, if does not exist, delete!
         
+        delete_counter = 0
+
         all_created_qrs = self.__dbc.get_all(CollibraStatus)
         for created_qr in all_created_qrs:
             if not self.__dbc.exists_collibra_db_record(collibra_process_id, created_qr.stratio_qr_dimension, created_qr.metadatapath):
                 # Delete the QR!!
                 governanceController.deleteQualityRule(created_qr.stratio_qr_id)
+                delete_counter += 1
                 pass
             pass
         
@@ -428,6 +452,7 @@ class CollibraController:
         # print("Existing Data Elements: {}".format(qr_created))
         print("Sucessfully created: {} quality rules".format(len(succesfulQr)))
         print("Failed to create: {} quality rules".format(len(failedQr)))
+        print("Deleted: {} quality rules".format(delete_counter))
         #qrs = governanceController.getQRByName(name="%_Automated%", size=10000)
         #print("Total Collibra QRs Created: {}".format(len(qrs)))
         #return succesfulQr, failedQr, len(qrs)
