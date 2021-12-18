@@ -143,5 +143,5 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 if __name__ == "__main__":
-    gov = GovernanceController.getInstance(os.getenv('GOV_ROOT_URL', "https://admin.saassgt.stratio.com/"), "caceis", "sdabbour", "aeWo4tha")
+    gov = GovernanceController.getInstance(os.getenv('GOV_ROOT_URL', "https://admin.saassgt.stratio.com/"), os.getenv('GOV_TENANT', "caceis"), os.getenv('GOV_USER', "sdabbour"), os.getenv('GOV_PASSWORD', "aeWo4tha"))
     uvicorn.run(app, host="0.0.0.0", port=8000)

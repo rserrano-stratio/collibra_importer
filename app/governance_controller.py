@@ -22,7 +22,7 @@ class GovernanceController:
     __root_url = ""
     __user_role = "SuperAdmin"
 
-    __login_mode = "pass" # pass, cert
+    __login_mode = os.getenv('GOV_LOGIN_MODE', "pass") # pass, cert
     ssl_cert = os.getenv('POSTGRES_CERT')
     ssl_key = os.getenv('POSTGRES_KEY')
     ssl_root_cert = os.getenv('CA_BUNDLE_PEM')
@@ -95,10 +95,13 @@ class GovernanceController:
             self.cookies_time = d2
 
     def getBaseUrl(self):
-        return self.__root_url
+        # return self.__root_url
+        return re.sub("^|/$", "", self.__root_url)
 
     def getApiUrl(self):
-        return self.getBaseUrl() + "/service/dg-businessglossary-api"
+        if self.get_login_mode() == "pass":
+            return self.getBaseUrl() + "/service/dg-businessglossary-api"
+        return self.getBaseUrl()
 
     def getUiUrl(self):
         return self.getBaseUrl() + "/service/governance-ui"
