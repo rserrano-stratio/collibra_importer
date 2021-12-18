@@ -203,6 +203,7 @@ class CollibraController:
         try:
             result = self.__dbc.add_record_with_return(collibra_process)
         except Exception as e:
+            result = None
             print(e)
 
         return result
@@ -253,6 +254,7 @@ class CollibraController:
         return all_deleted, deleted_qrs_count
 
     def processCollibraData(self, ontologyName, ontologyBaseTaxonomy, filter='%'):
+        run_mode = os.getenv("APP_RUN_MODE", "PRO")
         governanceController = GovernanceController.getInstance()
 
         qrQuery = '''select dd.l0_domain_name as dd_l0, dd.l1_domain_name as dd_l1, dd.l2_domain_name as dd_l2, dd.l3_domain_name as dd_l3, 
@@ -326,6 +328,8 @@ class CollibraController:
             del generic_template["query"]
             generic_qrs_dict[qr["name"]] = generic_template
         
+        print("Found: {} Generic QRs".format(len(generic_qrs_dict.keys())))
+
         with open('failed_qrs.txt', 'w') as f:
         
             for element in qr_df.iterrows():
@@ -441,9 +445,12 @@ class CollibraController:
                 
 
                         #qr_result = governanceController.addQualityRule(qr_template)
+                else:
+                    failedQr.append(metadataPath)
+                    f.write(metadataPath + '\n')
                         
                 current_count += 1
-                if current_count == 1:
+                if run_mode.lower()=="dev" and current_count == 1:
                     break
 
                 

@@ -40,8 +40,8 @@ async def root():
 
 
 @app.post("/update_collibra_qrs_files/")
-async def update_collibra_qrs_files(ontologyName: str, ontologyBaseTaxonomy: str, files: List[UploadFile] = File(...),
-                                    filter: str = '%', truncate: bool=False, upload: bool=False):
+async def update_collibra_qrs_files(ontologyName: str = "collibra", ontologyBaseTaxonomy: str="stratio.com/collibra", files: List[UploadFile] = File(...),
+                                    filter: str = '%', truncate: bool=True, upload: bool=True):
     zip_file_path = os.path.join(uploads_path, files[0].filename)
     base = os.path.basename(files[0].filename)
     filename_wo_ext = os.path.splitext(base)[0]
