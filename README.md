@@ -1,8 +1,14 @@
 # collibra_importer
 Collibra Importer Microservice
 
-docker build -t collibra-manager -f Dockerfile_local .
-docker run --rm --name collibra-manager --network host collibra-manager
+Run in local:
+docker build -t collibra-manager-local -f Dockerfile_local .
+docker run --rm --name collibra-manager-local --network host collibra-manager
+
+
+Production version:
+docker build -t collibra-manager .
+docker save collibra-manager:latest | gzip > collibra_v1.tgz
 
 
 Environmente Variables:
