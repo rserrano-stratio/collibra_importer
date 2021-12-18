@@ -19,7 +19,7 @@ RUN pip install -r /app/requirements.txt
 # Entrypoint
 RUN mkdir /etc/stratio
 COPY app /app
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data/uploads
 COPY app/data /app/data
 WORKDIR /app
 #CMD [ "python", "api_controller.py" ]

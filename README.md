@@ -3,7 +3,8 @@ Collibra Importer Microservice
 
 Run in local:
 docker build -t collibra-manager-local -f Dockerfile_local .
-docker run --rm --name collibra-manager-local --network host collibra-manager
+docker run --name local-postgres --network host -e POSTGRES_DB=collibra_importer -e POSTGRES_PASSWORD=mysecretpassword -d postgres
+docker run --rm --name collibra-manager --network host collibra-manager-local
 
 
 Production version:
