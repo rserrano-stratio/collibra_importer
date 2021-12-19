@@ -36,8 +36,20 @@ def zipdir(path, ziph):
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Collibra Integration Manager"}
 
+@app.post("/delete_mappingqrs_table")
+def delete_mappingqrs_table():
+    controller.truncateMappingQRsTable()
+    return {"status": "Done"}
+
+@app.post("/update_mapping_qrs_table/")
+async def update_mapping_qrs_table(file: UploadFile = File(...)):
+    filepath = os.path.join(uploads_path, file.filename)
+    with open(filepath, 'wb') as writer:
+        writer.write(file.file.read())
+
+    return await upload_mapping_qrs(filepath)
 
 @app.post("/update_collibra_qrs_files/")
 async def update_collibra_qrs_files(ontologyName: str = "collibra", ontologyBaseTaxonomy: str="stratio.com/collibra", files: List[UploadFile] = File(...),
@@ -56,19 +68,6 @@ async def update_collibra_qrs_files(ontologyName: str = "collibra", ontologyBase
         zip_ref.extractall(directory_to_extract_to)
     return await process_collibra(directory_to_extract_to, ontologyName, ontologyBaseTaxonomy, filter,
                                   truncate=truncate, upload=upload)
-
-@app.post("/update_mapping_qrs_table/")
-async def update_mapping_qrs_table(file: UploadFile = File(...)):
-    filepath = os.path.join(uploads_path, file.filename)
-    with open(filepath, 'wb') as writer:
-        writer.write(file.file.read())
-
-    return await upload_mapping_qrs(filepath)
-
-@app.post("/delete_mappingqrs_table")
-def delete_mappingqrs_table():
-    controller.truncateMappingQRsTable()
-    return {"status": "Done"}
 
 @app.get("/export_new_quality_rules/")
 def export_new_qrs_to_collibra(metadataPath: str = "_%"):
@@ -95,7 +94,7 @@ def export_new_qrs_to_collibra(metadataPath: str = "_%"):
 
 
 @app.post("/replicate_quality_rules/")
-def replicate_quality_rules(ontology: str = "hsbc_bm_v2"):
+def replicate_quality_rules(ontology: str = "collibra"):
     output = GovernanceController.getInstance().replicate_qrs(ontology)
     return {"Replicated_QRs": output}
 

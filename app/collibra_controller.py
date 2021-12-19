@@ -496,7 +496,7 @@ class CollibraController:
         try:
             self.__dbc.truncate_table(CollibraController.mapping_table)
         except Exception as e:
-            print("Failed to truncate table: {}".format(table))
+            print("Failed to truncate table: {}".format(CollibraController.mapping_table))
             pass
 
     def truncateControlTables(self):
