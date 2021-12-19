@@ -57,6 +57,18 @@ async def update_collibra_qrs_files(ontologyName: str = "collibra", ontologyBase
     return await process_collibra(directory_to_extract_to, ontologyName, ontologyBaseTaxonomy, filter,
                                   truncate=truncate, upload=upload)
 
+@app.post("/update_mapping_qrs_table/")
+async def update_mapping_qrs_table(file: UploadFile = File(...)):
+    filepath = os.path.join(uploads_path, file.filename)
+    with open(filepath, 'wb') as writer:
+        writer.write(file.file.read())
+
+    return await upload_mapping_qrs(filepath)
+
+@app.post("/delete_mappingqrs_table")
+def delete_mappingqrs_table():
+    controller.truncateMappingQRsTable()
+    return {"status": "Done"}
 
 @app.get("/export_new_quality_rules/")
 def export_new_qrs_to_collibra(metadataPath: str = "_%"):
@@ -122,6 +134,12 @@ async def process_collibra(directory, ontologyName, ontologyBaseTaxonomy, filter
     return {"status": "Updating QRs completed", "succesfulQRs": len(succesfulQr), "failedQRs": len(failedQr),
             "Total Imported QRs": allCollibra}
     #return 0
+
+async def upload_mapping_qrs(filepath):
+    controller.truncateMappingQRsTable()
+    controller.uploadCollibraMappingQRsFile(filepath)
+
+    return {"status": "Updating Mapping QRs completed"}
 
 
 def custom_openapi():

@@ -47,7 +47,8 @@ class CollibraController:
     __instance = None
     __dbc = None
     tables = ["dataconcepts", "datadomains", "dataelements", "dataqualityrules", "dqrequirements",
-"dqrequirementsfacts", "elementdictionary", "rulerequirementmapping", "conceptdictionary","mappingqrs"]
+"dqrequirementsfacts", "elementdictionary", "rulerequirementmapping", "conceptdictionary"]
+    mapping_table = "mappingqrs"
     control_tables = [CollibraImportProcess.__tablename__, CollibraStatus.__tablename__, CollibraDBRecord.__tablename__]
 
     @staticmethod
@@ -490,7 +491,14 @@ class CollibraController:
             except Exception as e:
                 print("Failed to truncate table: {}".format(table))
                 pass
-    
+
+    def truncateMappingQRsTable(self):
+        try:
+            self.__dbc.truncate_table(CollibraController.mapping_table)
+        except Exception as e:
+            print("Failed to truncate table: {}".format(table))
+            pass
+
     def truncateControlTables(self):
         for table in CollibraController.control_tables:
             try:
@@ -539,6 +547,36 @@ class CollibraController:
                 print(ex)
             else:
                 print("PostgreSQL Table %s has been created successfully." % postgreSQLTable)
+
+        postgreSQLConnection.close()
+        pass
+
+
+    def uploadCollibraMappingQRsFile(self, filepath):
+
+        engine = self.__dbc.engine
+
+        postgreSQLConnection = engine.connect()
+
+        postgreSQLTable = CollibraController.mapping_table
+        df = pd.read_csv(filepath)
+        org_columns = df.columns.to_list()
+        new_columns = [column.lower().replace(" ", "_") for column in org_columns]
+        n = len(org_columns)
+        new_columns_dict = {}
+
+        for i in range(n):
+            new_columns_dict[org_columns[i]] = new_columns[i]
+        df.rename(columns=new_columns_dict, inplace=True)
+
+        try:
+            frame = df.to_sql(postgreSQLTable, postgreSQLConnection, if_exists='append')
+        except ValueError as vx:
+            print(vx)
+        except Exception as ex:
+            print(ex)
+        else:
+            print("PostgreSQL Table %s has been created successfully." % postgreSQLTable)
 
         postgreSQLConnection.close()
         pass
