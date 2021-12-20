@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-set -x
+#set -x
 
 source /stratio/b-log.sh
 source /stratio/kms_utils.sh
@@ -68,4 +68,4 @@ getCAbundle "/etc/stratio" "PEM" \
 ## RUN PYTHON APP ===================================================
 
 # TODO: PUT MAIN HERE
-python3 /app/main.py
+python3 /app/api_controller.py

@@ -26,6 +26,6 @@ WORKDIR /app
 COPY entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
-EXPOSE 8001
+EXPOSE 8000
 
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
