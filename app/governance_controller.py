@@ -236,7 +236,7 @@ class GovernanceController:
         if self.get_login_mode() == "pass":
             response = requests.delete(url, headers=headers, cookies=cookies, verify=False)
         else:
-            response = requests.delete(url, headers=headers, params=params, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
+            response = requests.delete(url, headers=headers, cert=(self.ssl_cert, self.ssl_key), verify=self.ssl_root_cert)
         return response
 
     def requestsPut(self, url, params=None):
