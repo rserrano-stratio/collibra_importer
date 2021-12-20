@@ -430,7 +430,6 @@ class CollibraController:
 
                         if qr_result is not None and qr_result.ok:
                             succesfulQr.append(metadataPath)
-                            comp_qr_created += 1
                             qr_id = qr_result.json().get("id")
                             qr_active = True
                             qr_status = "Active"
@@ -472,8 +471,6 @@ class CollibraController:
                 pass
             pass
         
-        qr_created = comp_qr_created + conf_qr_created + val_qr_created
-        # print("Existing Data Elements: {}".format(qr_created))
         print("Sucessfully created: {} quality rules".format(len(succesfulQr)))
         print("Failed to create: {} quality rules".format(len(failedQr)))
         print("Deleted: {} quality rules".format(delete_counter))
@@ -481,7 +478,7 @@ class CollibraController:
         #print("Total Collibra QRs Created: {}".format(len(qrs)))
         #return succesfulQr, failedQr, len(qrs)
         print(failedQr)
-        return succesfulQr, failedQr, 0
+        return succesfulQr, failedQr, len(succesfulQr) + len(failedQr)
 
 
     def truncateTables(self):
