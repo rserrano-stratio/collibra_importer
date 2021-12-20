@@ -371,15 +371,12 @@ class GovernanceController:
             return []
 
     def getQRById(self, id):
-        headers = self.getHeaders()
-        cookies = self.getCookie()
 
         params = (
             ('id', id),
         )
 
-        response = requests.get(self.getApiUrl() + '/dictionary/user/quality/v1/quality/' + str(id),
-                                headers=headers, params=params, cookies=cookies, verify=False)
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/quality/v1/quality/' + str(id), params=params)
         try:
             return response.json()
         except Exception as e:
