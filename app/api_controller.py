@@ -3,9 +3,10 @@ import shutil
 import zipfile
 import uvicorn
 from asyncio import sleep
+from datetime import datetime
 
 from typing import List
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, BackgroundTasks
 from fastapi.responses import FileResponse
 from fastapi.openapi.utils import get_openapi
 # from pydantic import BaseModel
@@ -24,6 +25,7 @@ csvs_path = "data/csvs"
 controller = CollibraController.getInstance()
 #icontroller = InferController.getInstance()
 
+last_update_QRs = { "status": "Not updated." }
 
 def zipdir(path, ziph):
     # ziph is zipfile handle
@@ -52,22 +54,22 @@ async def update_mapping_qrs_table(file: UploadFile = File(...)):
     return await upload_mapping_qrs(filepath)
 
 @app.post("/update_collibra_qrs_files/")
-async def update_collibra_qrs_files(ontologyName: str = "collibra", ontologyBaseTaxonomy: str="stratio.com/collibra", files: List[UploadFile] = File(...),
+async def update_collibra_qrs_files(background_tasks: BackgroundTasks, ontologyName: str = "collibra", ontologyBaseTaxonomy: str="stratio.com/collibra", files: List[UploadFile] = File(...),
                                     filter: str = '%', truncate: bool=True, upload: bool=True):
-    zip_file_path = os.path.join(uploads_path, files[0].filename)
-    base = os.path.basename(files[0].filename)
-    filename_wo_ext = os.path.splitext(base)[0]
-    directory_to_extract_to = os.path.join(csvs_path, filename_wo_ext)
-    for file in files:
-        filepath = os.path.join(uploads_path, file.filename)
-        with open(filepath, 'wb') as writer:
-            writer.write(file.file.read())
-
-    shutil.rmtree(directory_to_extract_to, ignore_errors=True)
-    with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
-        zip_ref.extractall(directory_to_extract_to)
-    return await process_collibra(directory_to_extract_to, ontologyName, ontologyBaseTaxonomy, filter,
+    print("Updating Collibra QRs.")
+    global last_update_QRs
+    if last_update_QRs["status"] == "Updating":
+        return "Updating Collibra QRs is already being processed."
+    last_update_QRs = { "status": "Updating." }
+    background_tasks.add_task(process_collibra, files, ontologyName, ontologyBaseTaxonomy, filter,
                                   truncate=truncate, upload=upload)
+    return "Updating Collibra QRs."
+
+@app.get("/get_collibra_status/")
+def get_collibra_status():
+    global last_update_QRs
+    return last_update_QRs
+    
 
 @app.get("/export_new_quality_rules/")
 def export_new_qrs_to_collibra(metadataPath: str = "_%"):
@@ -120,17 +122,32 @@ def connect_ontologies(file: UploadFile = File(...)):
     output = GovernanceController.getInstance().connect_ontologies(df)
     return {"Connected_Properties": output}
 
+def process_csv(files):
+    zip_file_path = os.path.join(uploads_path, files[0].filename)
+    base = os.path.basename(files[0].filename)
+    filename_wo_ext = os.path.splitext(base)[0]
+    directory_to_extract_to = os.path.join(csvs_path, filename_wo_ext)
+    for file in files:
+        filepath = os.path.join(uploads_path, file.filename)
+        with open(filepath, 'wb') as writer:
+            writer.write(file.file.read())
+    shutil.rmtree(directory_to_extract_to, ignore_errors=True)
+    with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+        zip_ref.extractall(directory_to_extract_to)
+    return directory_to_extract_to
 
-async def process_collibra(directory, ontologyName, ontologyBaseTaxonomy, filter, truncate=False, upload=False):
+async def process_collibra(files, ontologyName, ontologyBaseTaxonomy, filter, truncate=False, upload=False):
     # if not truncate:
     #     return {"t": "t"}
+    directory = process_csv(files)
     if truncate:
         controller.truncateTables()
     if upload:
         controller.uploadCollibraFiles(directory)
 
     succesfulQr, failedQr, allCollibra = controller.processCollibraData(ontologyName, ontologyBaseTaxonomy, filter)
-    return {"status": "Updating QRs completed", "succesfulQRs": len(succesfulQr), "failedQRs": len(failedQr),
+    global last_update_QRs
+    last_update_QRs = {"status": "Updating QRs completed", "last_update": datetime.now(), "succesfulQRs": len(succesfulQr), "failedQRs": len(failedQr),
             "Total Imported QRs": allCollibra}
     #return 0
 
