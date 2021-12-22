@@ -113,6 +113,11 @@ def purge_collibra_data():
         controller.truncateControlTables()
     return {"success": all_deleted, "Deleted_QRs": deleted_qrs_count}
 
+@app.post("/purge_collibra_control_data")
+def purge_collibra_control_data():
+    controller.truncateControlTables()
+    return {"success": True}
+
 @app.post("/connect_ontologies/")
 def connect_ontologies(file: UploadFile = File(...)):
     filepath = os.path.join(uploads_path, file.filename)
@@ -136,9 +141,10 @@ def process_csv(files):
         zip_ref.extractall(directory_to_extract_to)
     return directory_to_extract_to
 
-async def process_collibra(files, ontologyName, ontologyBaseTaxonomy, filter, truncate=False, upload=False):
+def process_collibra(files, ontologyName, ontologyBaseTaxonomy, filter, truncate=False, upload=False):
     # if not truncate:
     #     return {"t": "t"}
+    print("Started processing Collibra Data")
     directory = process_csv(files)
     if truncate:
         controller.truncateTables()
@@ -149,6 +155,8 @@ async def process_collibra(files, ontologyName, ontologyBaseTaxonomy, filter, tr
     global last_update_QRs
     last_update_QRs = {"status": "Updating QRs completed", "last_update": datetime.now(), "succesfulQRs": len(succesfulQr), "failedQRs": len(failedQr),
             "Total Imported QRs": allCollibra}
+    print("Succesful: {}, Failed: {}".format(len(succesfulQr), len(failedQr)))
+    print("Finished processing Collibra Data")
     #return 0
 
 async def upload_mapping_qrs(filepath):

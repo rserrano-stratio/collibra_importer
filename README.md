@@ -10,6 +10,7 @@ docker run --rm --name collibra-manager --network host -e APP_RUN_MODE=DEV colli
 Production version:
 docker build -t collibra-manager .
 docker save collibra-manager:latest | gzip > collibra_v1.tgz
+gunzip -c /tmp/collibra_v1.tgz | docker load
 
 
 Environmente Variables:

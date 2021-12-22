@@ -46,8 +46,8 @@ class CollibraRecord:
 class CollibraController:
     __instance = None
     __dbc = None
-    tables = ["dataconcepts", "datadomains", "dataelements", "dataqualityrules", "dqrequirements",
-"dqrequirementsfacts", "elementdictionary", "rulerequirementmapping", "conceptdictionary"]
+    tables = ["dataconcepts", "datadomains", "dataelements", "dqrequirements",
+"dqrequirementsfacts", "elementdictionary", "rulerequirementmapping", "conceptdictionary"] # , "dataqualityrules"
     mapping_table = "mappingqrs"
     control_tables = [CollibraImportProcess.__tablename__, CollibraStatus.__tablename__, CollibraDBRecord.__tablename__]
 
