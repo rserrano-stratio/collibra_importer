@@ -415,6 +415,29 @@ class GovernanceController:
 
         return response.json()
 
+    def getOntologyProperties(self, ontology_name):
+
+        params = (
+            ('ontologyPathLike', 'ontologies://{}/%'.format(ontology_name)),
+            ('typeIn', 'PROPERTY'),
+            ('size', 200000),
+        )
+
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/businessLayer/v1/ontology/searchByOntologyPathLikeAndTypeIn', params=params)
+
+        return response.json()["content"]
+
+    def getMetadataPathRelations(self, metadataPath):
+
+        params = (
+            ('size', 2000),
+            ('sourceMetadataPath', metadataPath),
+        )
+
+        response = self.requestsGet(self.getApiUrl() + '/dictionary/user/relation/v1/relation/getAllBySourceMetadataPath', params=params)
+
+        return response.json()
+
     def key_searchByKeyLike(self, key_filter="%"):
 
         params = (
@@ -577,6 +600,73 @@ class GovernanceController:
         return data
 
     def replicate_qrs(self, ontology_name):
+        output_count = 0
+        gov = GovernanceController.getInstance()
+        ontologyMetadataPathLike = "%" + ontology_name + "%"
+        ontology_properties = self.getOntologyProperties(ontology_name)
+        for ontology_property in ontology_properties:
+            property_metadatapath = ontology_property["ontologyPath"]
+            property_name = ontology_property["name"]
+            property_qrs = gov.getQrInMetadataPath(property_metadatapath)["content"]
+            property_qrs_count = len(property_qrs)
+            if property_qrs_count > 0:
+                # Get relations
+                property_relations = self.getMetadataPathRelations(property_metadatapath)
+                property_relations_count = len(property_relations)
+                if property_relations_count > 0:
+                    # replicate qrs for each relation
+                    for pqr in property_qrs:
+                        for p_relation in property_relations:
+                            sourceMetadataPath = p_relation.get("sourceMetadataPath")
+                            sourceName = p_relation.get("sourceName")
+                            targetMetadataPath = p_relation.get("targetMetadataPath")
+                            targetName = p_relation.get("targetName")
+                            sourceType = p_relation.get("sourceType")
+                            targetType = p_relation.get("targetType")
+                            targetMetadataPath_slash_split = targetMetadataPath.split("/")
+                            target_entity_property = targetMetadataPath_slash_split[-1]
+                            target_entity_property_split = target_entity_property.split(":")
+                            target_entity_name = target_entity_property_split[-3]
+                            target_property_name = target_entity_property_split[-2]
+                            if sourceType.lower() == "DATA_ASSET_ONTOLOGY".lower() and targetType.lower() == "DATA_ASSET_ONTOLOGY".lower():
+                                new_qr = copy.deepcopy(pqr)
+                                new_qr_dimension = new_qr["name"].split("-")[-1]
+                                new_qr["id"] = -1
+                                new_qr["metadataPath"] = targetMetadataPath
+                                new_qr["name"] = "{}-{}-{}".format(target_entity_name, target_property_name, new_qr_dimension)
+
+                                for cond in new_qr["parameters"]["filter"]["cond"]:
+                                    cond["attribute"] = targetName
+                                    if cond["operation"].lower() == "regex":
+                                        if cond["param"][0]["type"].lower() == "ValueOperand".lower():
+                                            cond["param"][0]["value"] = cond["param"][0]["value"].replace("\\", "\\\\")
+
+                                new_qr.pop("query")
+                                new_qr.pop("qualityGenericId")
+                                new_qr.pop("tenant")
+                                new_qr.pop("createdAt")
+                                new_qr.pop("modifiedAt")
+                                new_qr.pop("userId")
+                                # print(new_qr)
+                                try:
+                                    res = gov.addQualityRule(new_qr)
+                                    #output_count = output_count + 1
+                                    # print(res)
+                                    if res.status_code in [200, 201]:
+                                        output_count = output_count + 1
+                                    else:
+                                        raise Exception("Error occurred replicating the QR")
+                                except Exception as e:
+                                    print("Error occurred replicating the QR: " + str(new_qr))
+                                    pass
+                                pass
+
+                    pass
+                pass
+            pass
+        return output_count
+
+    def replicate_qrs_old(self, ontology_name):
         output_count = 0
         gov = GovernanceController.getInstance()
         ontologyMetadataPathLike = "%" + ontology_name + "%"
